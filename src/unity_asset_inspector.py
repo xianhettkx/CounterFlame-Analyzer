@@ -99,11 +99,12 @@ def inspect_ipa(ipa_path: Path, out_dir: Path, targets_path: Path) -> dict[str, 
         rows = []
         for item in selected:
             path = item["catalog_path"]
-            if path not in zip_names:
-                suffix_hits = [n for n in zip_names if n.endswith("/" + path)]
-                ipa_path_in_zip = suffix_hits[0] if len(suffix_hits) == 1 else None
+            normalized = clean_path(path)
+            if normalized in zip_names:
+                ipa_path_in_zip = normalized
             else:
-                ipa_path_in_zip = path
+                suffix_hits = [n for n in zip_names if n.endswith("/" + normalized)]
+                ipa_path_in_zip = suffix_hits[0] if len(suffix_hits) == 1 else None
             row = {
                 **item,
                 "ipa_path": ipa_path_in_zip or "",
