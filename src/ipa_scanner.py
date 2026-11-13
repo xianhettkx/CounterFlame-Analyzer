@@ -19,6 +19,8 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from src.bundle_inspector import inspect_header
+
 TEXT_LIMIT = 64 * 1024 * 1024
 CATALOG_NAMES = {"catalog.json", "catalog.bin", "catalog.hash", "settings.json"}
 
@@ -261,7 +263,11 @@ def scan_ipa(ipa_path: Path, output_dir: Path, targets_path: Path | None = None)
             "catalog_hash_files": catalog_hashes,
             "settings_files": settings_files,
             "physical_bundles": [
-                {"ipa_path": i.filename, "size_bytes": i.file_size}
+                {
+                    "ipa_path": i.filename,
+                    "size_bytes": i.file_size,
+                    "header": inspect_header(zf.open(i, "r")),
+                }
                 for i in physical_bundles
             ],
             "catalog_path_matches": matched,
