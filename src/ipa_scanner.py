@@ -19,7 +19,12 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from src.bundle_inspector import inspect_header
+try:
+    # Package import (e.g. tests importing src.ipa_scanner).
+    from .bundle_inspector import inspect_header
+except ImportError:
+    # Direct script execution: python src/ipa_scanner.py ...
+    from bundle_inspector import inspect_header
 
 TEXT_LIMIT = 64 * 1024 * 1024
 CATALOG_NAMES = {"catalog.json", "catalog.bin", "catalog.hash", "settings.json"}
