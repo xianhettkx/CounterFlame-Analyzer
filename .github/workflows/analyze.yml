@@ -2,6 +2,12 @@ name: Analyze CounterFlame IPA
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - '.github/workflows/analyze.yml'
+      - 'requirements.txt'
 
 permissions:
   contents: read
@@ -62,6 +68,7 @@ jobs:
           python -m zipfile -t input.ipa
           python src/ipa_scanner.py input.ipa --out reports --targets config/target_skins.json
           python src/unity_asset_inspector.py input.ipa --out reports --targets config/target_skins.json
+          python src/unity_full_bundle_index.py input.ipa --out reports
 
       - name: Upload analysis reports
         if: always()
