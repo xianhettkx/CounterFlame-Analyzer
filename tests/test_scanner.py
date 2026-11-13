@@ -6,6 +6,7 @@ from pathlib import Path
 
 from src.ipa_scanner import scan_ipa
 from src.bundle_inspector import inspect_header
+from src.unity_asset_inspector import select_target_paths
 
 
 class ScannerTests(unittest.TestCase):
@@ -54,6 +55,19 @@ class ScannerTests(unittest.TestCase):
             report = scan_ipa(ipa, root / "out", None)
             self.assertEqual(report["summary"]["catalog_paths_not_found_in_ipa"], 1)
             self.assertEqual(report["summary"]["physical_bundle_entry_count"], 0)
+
+    def test_selects_target_bundle_paths_after_runtime_prefix(self):
+        catalog = {
+            "m_InternalIds": [
+                "{UnityEngine.AddressableAssets.Addressables.RuntimePath}/iOS/skins/butterfly_marblefade/diffuse.bundle",
+                "{UnityEngine.AddressableAssets.Addressables.RuntimePath}/iOS/skins/other_skin/diffuse.bundle",
+            ]
+        }
+        targets = {"skins": [{"skin_key": "butterfly_marblefade", "display_name": "Butterfly Marble Fade"}]}
+        selected = select_target_paths(catalog, targets)
+        self.assertEqual(len(selected), 1)
+        self.assertEqual(selected[0]["skin_key"], "butterfly_marblefade")
+        self.assertEqual(selected[0]["catalog_path"], catalog["m_InternalIds"][0])
 
 
 if __name__ == "__main__":
