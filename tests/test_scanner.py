@@ -5,6 +5,7 @@ import zipfile
 from pathlib import Path
 
 from src.ipa_scanner import scan_ipa
+from src.bundle_inspector import inspect_header
 
 
 class ScannerTests(unittest.TestCase):
@@ -28,6 +29,18 @@ class ScannerTests(unittest.TestCase):
             self.assertEqual(report["summary"]["catalog_paths_matched_to_ipa"], 1)
             self.assertTrue((output / "analysis.json").is_file())
             self.assertTrue((output / "report.html").is_file())
+
+    def test_identifies_unityfs_header(self):
+        import io
+        result = inspect_header(io.BytesIO(b"UnityFS\\x00  6.x.x\\x00" + b"\\x00" * 40))
+        self.assertEqual(result["signature"], "UnityFS")
+        self.assertEqual(result["format"], "UnityFS")
+
+    def test_unknown_bundle_header_is_not_misidentified(self):
+        import io
+        result = inspect_header(io.BytesIO(b"not a unity bundle"))
+        self.assertIsNone(result["signature"])
+        self.assertEqual(result["format"], "unknown_or_nonstandard")
 
     def test_reports_missing_catalog_path_without_claiming_asset_failure(self):
         with tempfile.TemporaryDirectory() as tmp:
