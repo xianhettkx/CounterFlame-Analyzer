@@ -5,7 +5,7 @@
     {
       "skin_key": "butterfly_marblefade",
       "display_name": "Butterfly Knife | Marble Fade",
-      "expected_bundle_count": 7,
+      "expected_bundle_count": 8,
       "weapon": "Butterfly Knife"
     },
     {
@@ -17,7 +17,7 @@
     {
       "skin_key": "awp_dragonlore",
       "display_name": "AWP | Dragon Lore",
-      "expected_bundle_count": 4,
+      "expected_bundle_count": 5,
       "weapon": "AWP"
     },
     {
