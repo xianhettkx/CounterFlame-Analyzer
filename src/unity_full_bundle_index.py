@@ -10,8 +10,10 @@ MODEL_TYPES = {"GameObject","Transform","Mesh","SkinnedMeshRenderer","MeshRender
 def inspect_bundle(data: bytes, UnityPy: Any) -> dict[str, Any]:
     env=UnityPy.load(data); counts: Counter[str]=Counter()
     objects=[]; versions=set(); bundle_metadata=[]; external_files=[]; serialized_files=[]
+    for cab_key,cab_obj in getattr(env,"cabs",{}).items():
+        serialized_files.append({"key":str(cab_key),"name":str(getattr(cab_obj,"name","") or ""),"file_name":str(getattr(cab_obj,"file_name","") or ""),"unity_version":str(getattr(cab_obj,"unity_version","") or ""),"source":"env.cabs"})
     for file_key,file_obj in getattr(env,"files",{}).items():
-        serialized_files.append({"key":str(file_key),"name":str(getattr(file_obj,"name","") or ""),"file_name":str(getattr(file_obj,"file_name","") or ""),"unity_version":str(getattr(file_obj,"unity_version","") or "")})
+        serialized_files.append({"key":str(file_key),"name":str(getattr(file_obj,"name","") or ""),"file_name":str(getattr(file_obj,"file_name","") or ""),"unity_version":str(getattr(file_obj,"unity_version","") or ""),"source":"env.files"})
         for ext in getattr(file_obj,"externals",[]) or []:
             external_files.append({"file_name":str(getattr(ext,"path","") or getattr(ext,"name","") or ""),"guid":str(getattr(ext,"guid","") or ""),"type":str(getattr(ext,"type","") or "")})
     for obj in env.objects:
