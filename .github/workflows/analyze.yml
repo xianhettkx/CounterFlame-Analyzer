@@ -9,7 +9,7 @@ permissions:
 jobs:
   analyze:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - name: Checkout analyzer
         uses: actions/checkout@v4
@@ -22,25 +22,36 @@ jobs:
       - name: Run scanner tests
         run: python -m unittest discover -s tests -v
 
-      - name: Download private IPA
-        env:
-          IPA_DOWNLOAD_URL: ${{ secrets.IPA_DOWNLOAD_URL }}
+      - name: Download public IPA release asset
         run: |
           python - <<'PY'
-          import os, sys, urllib.request
-          url = os.environ.get("IPA_DOWNLOAD_URL", "").strip()
-          if not url:
-              print("IPA_DOWNLOAD_URL secret is not configured.")
-              print("No IPA was downloaded. Configure a private, temporary download URL in repository Actions secrets.")
-              sys.exit(1)
-          request = urllib.request.Request(url, headers={"User-Agent": "CounterFlame-Analyzer/1.0"})
-          with urllib.request.urlopen(request, timeout=120) as response, open("input.ipa", "wb") as output:
+          import hashlib
+          import urllib.request
+
+          url = "https://github.com/xianhettkx/CounterFlame-Analyzer/releases/download/ipa-v1/CounterFlame-1.4.1-c7-ios.2.ipa"
+          expected = "6c3e740ca379c5daf55f635e1228414230ca4acb7608cd7b35e7f5c0e0d952d3"
+
+          request = urllib.request.Request(
+              url,
+              headers={"User-Agent": "CounterFlame-Analyzer/1.0"},
+          )
+          digest = hashlib.sha256()
+          total = 0
+
+          with urllib.request.urlopen(request, timeout=180) as response, open("input.ipa", "wb") as output:
               while True:
-                  chunk = response.read(1024 * 1024)
+                  chunk = response.read(8 * 1024 * 1024)
                   if not chunk:
                       break
                   output.write(chunk)
-          print("Private IPA download completed; URL was not logged.")
+                  digest.update(chunk)
+                  total += len(chunk)
+
+          actual = digest.hexdigest()
+          print(f"Downloaded {total} bytes.")
+          if actual != expected:
+              raise SystemExit(f"SHA256 mismatch: {actual}")
+          print("SHA256 verified.")
           PY
 
       - name: Verify archive and scan
