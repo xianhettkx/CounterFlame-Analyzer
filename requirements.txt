@@ -1,1 +1,2 @@
-# Core analyzer uses only the Python standard library.
+# Unity AssetBundle parsing for the targeted read-only second pass.
+UnityPy==1.24.2
