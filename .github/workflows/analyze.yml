@@ -19,7 +19,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run scanner tests\n        run: python -m unittest discover -s tests -v\n\n      - name: Download private IPA
+      - name: Run scanner tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Download private IPA
         env:
           IPA_DOWNLOAD_URL: ${{ secrets.IPA_DOWNLOAD_URL }}
         run: |
