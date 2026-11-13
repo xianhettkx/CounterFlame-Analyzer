@@ -94,11 +94,11 @@ def build_html(report: dict[str, Any]) -> str:
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <title>CounterFlame IPA Analysis</title>
 <style>
-body{font:15px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;max-width:1100px;margin:24px auto;padding:0 16px;color:#18202a}
-h1{font-size:25px} .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}
-.card{border:1px solid #d9dee7;border-radius:12px;padding:14px}.n{font-size:24px;font-weight:700}
-small{color:#667085}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:9px;border-bottom:1px solid #e5e7eb;overflow-wrap:anywhere}
-.warn{background:#fff8e6;padding:12px;border-radius:10px}
+body{{font:15px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;max-width:1100px;margin:24px auto;padding:0 16px;color:#18202a}}
+h1{{font-size:25px}} .grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}}
+.card{{border:1px solid #d9dee7;border-radius:12px;padding:14px}}.n{{font-size:24px;font-weight:700}}
+small{{color:#667085}}table{{width:100%;border-collapse:collapse}}td,th{{text-align:left;padding:9px;border-bottom:1px solid #e5e7eb;overflow-wrap:anywhere}}
+.warn{{background:#fff8e6;padding:12px;border-radius:10px}}
 </style><body>
 <h1>CounterFlame IPA Analysis</h1>
 <p><small>Generated: {generated}</small></p>
@@ -131,7 +131,7 @@ small{color:#667085}table{width:100%;border-collapse:collapse}td,th{text-align:l
     )
 
 
-def human_bytes(n: int) -> str:
+def sha256_file(path: Path) -> str:\n    digest = hashlib.sha256()\n    with path.open("rb") as stream:\n        for chunk in iter(lambda: stream.read(1024 * 1024), b""):\n            digest.update(chunk)\n    return digest.hexdigest()\n\n\ndef human_bytes(n: int) -> str:
     value = float(n)
     for unit in ("B", "KB", "MB", "GB", "TB"):
         if value < 1024 or unit == "TB":
@@ -236,7 +236,7 @@ def scan_ipa(ipa_path: Path, output_dir: Path, targets_path: Path | None = None)
             "input": {
                 "filename": ipa_path.name,
                 "size_bytes": ipa_path.stat().st_size,
-                "sha256": hashlib.sha256(ipa_path.read_bytes()).hexdigest(),
+                "sha256": sha256_file(ipa_path),
             },
             "summary": {
                 "ipa_entry_count": len(infos),
