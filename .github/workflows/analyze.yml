@@ -1,0 +1,55 @@
+name: Analyze CounterFlame IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout analyzer
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download private IPA
+        env:
+          IPA_DOWNLOAD_URL: ${{ secrets.IPA_DOWNLOAD_URL }}
+        run: |
+          python - <<'PY'
+          import os, sys, urllib.request
+          url = os.environ.get("IPA_DOWNLOAD_URL", "").strip()
+          if not url:
+              print("IPA_DOWNLOAD_URL secret is not configured.")
+              print("No IPA was downloaded. Configure a private, temporary download URL in repository Actions secrets.")
+              sys.exit(1)
+          request = urllib.request.Request(url, headers={"User-Agent": "CounterFlame-Analyzer/1.0"})
+          with urllib.request.urlopen(request, timeout=120) as response, open("input.ipa", "wb") as output:
+              while True:
+                  chunk = response.read(1024 * 1024)
+                  if not chunk:
+                      break
+                  output.write(chunk)
+          print("Private IPA download completed; URL was not logged.")
+          PY
+
+      - name: Verify archive and scan
+        run: |
+          python -m zipfile -t input.ipa
+          python src/ipa_scanner.py input.ipa --out reports --targets config/target_skins.json
+
+      - name: Upload analysis reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: counterflame-analysis-report
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 14
