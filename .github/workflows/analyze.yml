@@ -19,6 +19,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install analysis dependencies
+        run: pip install -r requirements.txt
+
       - name: Run scanner tests
         run: python -m unittest discover -s tests -v
 
@@ -58,6 +61,7 @@ jobs:
         run: |
           python -m zipfile -t input.ipa
           python src/ipa_scanner.py input.ipa --out reports --targets config/target_skins.json
+          python src/unity_asset_inspector.py input.ipa --out reports --targets config/target_skins.json
 
       - name: Upload analysis reports
         if: always()
