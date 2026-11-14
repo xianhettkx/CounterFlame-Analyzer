@@ -33,25 +33,26 @@ jobs:
           print("reference IPA SHA256:", actual)
           if actual != expected: raise SystemExit("Reference IPA checksum mismatch")
           PY
-      - name: Extract only inventory runtime evidence
+      - name: Extract inventory runtime evidence
         run: |
           python - <<'PY'
           import zipfile, pathlib, json, hashlib
           z = zipfile.ZipFile("reference.ipa")
           names = z.namelist()
+          app_prefixes = sorted({n.split("/")[1] for n in names if n.startswith("Payload/") and n.count("/") >= 2 and n.endswith(".app/")})
+          app_root = "Payload/CounterFlame.app/"
           targets = {
-            "CounterFlameKAlert551.dylib": [n for n in names if n.endswith("/Frameworks/CounterFlameKAlert551.dylib")],
-            "global-metadata.dat": [n for n in names if n.endswith("/global-metadata.dat")],
-            "UnityFramework": [n for n in names if n.endswith("/Frameworks/UnityFramework.framework/UnityFramework") or n.endswith("/UnityFramework")],
-            "Info.plist": [n for n in names if n.endswith("/Info.plist")],
+            "CounterFlameKAlert551.dylib": [n for n in names if n == app_root + "Frameworks/CounterFlameKAlert551.dylib"],
+            "global-metadata.dat": [n for n in names if n.startswith(app_root) and n.endswith("/global-metadata.dat")],
+            "UnityFramework": [n for n in names if n == app_root + "Frameworks/UnityFramework.framework/UnityFramework"],
+            "Info.plist": [n for n in names if n == app_root + "Info.plist"],
           }
           out = pathlib.Path("runtime-evidence"); out.mkdir()
-          report = {"source":"reference IPA","sha256":"7b20f04d493c60cf5e215c0a82050fa691105fc47a0748e46e55cc3078f9cc9f","files":{}}
+          report = {"source":"reference IPA","sha256":"7b20f04d493c60cf5e215c0a82050fa691105fc47a0748e46e55cc3078f9cc9f","app_root":app_root,"files":{}}
           for label, hits in targets.items():
               if not hits:
                   report["files"][label] = {"status":"not_found"}
                   continue
-              # Keep exactly one match per target to avoid ambiguous extraction.
               if len(hits) != 1:
                   raise SystemExit(f"Ambiguous {label}: {hits}")
               data = z.read(hits[0])
