@@ -72,6 +72,31 @@ jobs:
           if report["files"]["CounterFlameKAlert551.dylib"].get("status") == "not_found":
               raise SystemExit("Reference inventory dylib missing")
           PY
+      - name: Download and extract stock executable for comparison
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, urllib.request, zipfile, plistlib, pathlib
+          url = "https://github.com/xianhettkx/CounterFlame-Analyzer/releases/download/ipa-v1/CounterFlame-1.4.1-c7-ios.2.ipa"
+          expected = "6c3e740ca379c5daf55f635e1228414230ca4acb7608cd7b35e7f5c0e0d952d3"
+          req = urllib.request.Request(url, headers={"User-Agent":"CounterFlame-Inventory-Audit/1.0"})
+          h = hashlib.sha256()
+          with urllib.request.urlopen(req, timeout=300) as r, open("stock.ipa","wb") as f:
+              while True:
+                  b = r.read(8 * 1024 * 1024)
+                  if not b: break
+                  f.write(b); h.update(b)
+          actual = h.hexdigest()
+          print("stock IPA SHA256:", actual)
+          if actual != expected: raise SystemExit("Stock IPA checksum mismatch")
+          z = zipfile.ZipFile("stock.ipa")
+          root = "Payload/CounterFlame.app/"
+          plist = plistlib.loads(z.read(root+"Info.plist"))
+          executable = plist["CFBundleExecutable"]
+          data = z.read(root+executable)
+          pathlib.Path("runtime-evidence/CounterFlame-stock").write_bytes(data)
+          print("Extracted stock executable:", executable, "bytes:", len(data))
+          PY
       - name: Inspect Mach-O injection and linkage evidence
         run: |
           python - <<'PY'
@@ -94,12 +119,15 @@ jobs:
                   offset += cmdsize
               return {"file":path.name,"bytes":len(data),"cpu_type":header[1],"file_type":header[3],"load_commands":found}
           app = inspect(root/"CounterFlame")
+          stock = inspect(root/"CounterFlame-stock")
           tweak = inspect(root/"CounterFlameKAlert551.dylib")
           install = next((x["name"] for x in tweak["load_commands"] if x["command"]=="LC_ID_DYLIB"),None)
           app_loads = [x["name"] for x in app["load_commands"] if x["command"]!="LC_ID_DYLIB"]
           report = {
             "scope":"Static Mach-O load-command inspection only; no code execution.",
-            "main_executable":app,
+            "reference_main_executable":app,
+            "stock_main_executable":stock,
+            "stock_main_executable_directly_loads_reference_module":any(x["name"].endswith("CounterFlameKAlert551.dylib") for x in stock["load_commands"] if x["command"]!="LC_ID_DYLIB"),
             "reference_module":tweak,
             "reference_module_install_name":install,
             "main_executable_directly_loads_reference_module":any(x.endswith("CounterFlameKAlert551.dylib") for x in app_loads),
