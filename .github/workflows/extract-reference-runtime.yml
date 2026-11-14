@@ -79,7 +79,7 @@ jobs:
           root = pathlib.Path("runtime-evidence")
           def inspect(path):
               data = path.read_bytes()
-              if data[:4] != b"\\xcf\\xfa\\xed\\xfe":
+              if data[:4] != b"\xcf\xfa\xed\xfe":
                   raise SystemExit(f"Unsupported Mach-O magic in {path.name}: {data[:4].hex()}")
               header = struct.unpack_from("<IiiIIIII", data, 0)
               ncmds, offset = header[4], 32
@@ -89,7 +89,7 @@ jobs:
                   cmd, cmdsize = struct.unpack_from("<II", data, offset)
                   if cmd in dylib_cmds and cmdsize >= 24:
                       nameoff = struct.unpack_from("<I", data, offset+8)[0]
-                      raw = data[offset+nameoff:offset+cmdsize].split(b"\\0",1)[0]
+                      raw = data[offset+nameoff:offset+cmdsize].split(b"\0",1)[0]
                       found.append({"command":dylib_cmds[cmd],"name":raw.decode("utf-8","replace")})
                   offset += cmdsize
               return {"file":path.name,"bytes":len(data),"cpu_type":header[1],"file_type":header[3],"load_commands":found}
