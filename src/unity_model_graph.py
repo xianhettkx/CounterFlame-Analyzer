@@ -29,7 +29,15 @@ def ptr_fields(value: Any, prefix: str = "", depth: int = 0):
             yield from ptr_fields(item,f"{prefix}.{k}",depth+1)
         return
     try: attrs=vars(value)
-    except Exception: return
+    except Exception:
+        attrs={}
+        for attr in getattr(type(value),"__attrs_attrs__",()):
+            key=getattr(attr,"name",None)
+            if key:
+                try: attrs[key]=getattr(value,key)
+                except Exception: pass
+        if not attrs:
+            return
     for key,item in attrs.items():
         if key.startswith("_"): continue
         yield from ptr_fields(item,f"{prefix}.{key}" if prefix else key,depth+1)
