@@ -185,6 +185,7 @@ def main():
             except Exception as exc:
                 audit.setdefault("bundle_errors",[]).append({"path":bundle_path,"error":f"{type(exc).__name__}: {exc}"[:200]})
         replacements=[]
+        skipped_incompatible=[]
         for skin_key,spec in SKINS.items():
             skin_rows=[]
             source_mats=skin_materials.get(skin_key,[])
@@ -234,15 +235,27 @@ def main():
                             replacement_name=TEXTURE_OVERRIDES.get(skin_key,{}).get(base_name,{}).get(slot)
                             chosen=source_textures.get(replacement_name) if replacement_name else None
                             if chosen is not None:
-                                # Copy the already-encoded Unity texture payload directly.
-                                # This avoids recompression artifacts and keeps the source format/mip chain.
+                                # Only replace payloads with an identical GPU layout.
+                                compatible = (
+                                    int(base_tex_data.m_Width) == chosen["width"] and
+                                    int(base_tex_data.m_Height) == chosen["height"] and
+                                    base_tex_data.m_TextureFormat == chosen["format"] and
+                                    len(bytes(base_tex_data.image_data)) == len(chosen["data"])
+                                )
+                                if not compatible:
+                                    skipped_incompatible.append({
+                                        "skin_key":skin_key,"base_material":base_name,"slot":slot,
+                                        "source_texture":replacement_name,
+                                        "base_dimensions":[int(base_tex_data.m_Width),int(base_tex_data.m_Height)],
+                                        "source_dimensions":[chosen["width"],chosen["height"]],
+                                        "base_format":str(base_tex_data.m_TextureFormat),
+                                        "source_format":str(chosen["format"]),
+                                        "base_bytes":len(bytes(base_tex_data.image_data)),
+                                        "source_bytes":len(chosen["data"]),
+                                    })
+                                    continue
                                 base_tex_data.image_data=chosen["data"]
-                                base_tex_data.m_Width=chosen["width"]
-                                base_tex_data.m_Height=chosen["height"]
                                 base_tex_data.m_CompleteImageSize=len(chosen["data"])
-                                base_tex_data.m_TextureFormat=chosen["format"]
-                                if hasattr(base_tex_data,"m_MipCount"):
-                                    base_tex_data.m_MipCount=chosen["mip_count"]
                                 base_tex_data.save()
                                 replacements.append({
                                     "skin_key":skin_key,"base_material":base_name,"slot":slot,
@@ -259,9 +272,8 @@ def main():
                 "slots":skin_rows,
             }
         if args.apply:
-            if not replacements:
-                raise RuntimeError("No unambiguous local texture overrides were applied; refusing to emit a patch")
-            # Save the modified main SerializedFile. Texture payloads are embedded in resources.assets.
+            # Save even when all candidate overrides are rejected: this keeps
+            # the original texture data intact instead of producing purple assets.
             output_asset=out/"resources.assets"
             output_asset.write_bytes(base_env.file.save())
             # Verify the modified SerializedFile can be reopened.
@@ -269,6 +281,7 @@ def main():
             if not any(o.type.name=="Material" for o in verify.objects):
                 raise RuntimeError("Saved resources.assets failed verification")
             audit["replacements"]=replacements
+            audit["skipped_incompatible"]=skipped_incompatible
             audit["patch_file"]="resources.assets"
             audit["patch_sha256"]=__import__("hashlib").sha256(output_asset.read_bytes()).hexdigest()
         audit["source_texture_index"]={k:{"width":v["width"],"height":v["height"],"format":str(v["format"]),"mip_count":v["mip_count"],"bundle":v["bundle"]} for k,v in sorted(source_textures.items())}
@@ -278,6 +291,7 @@ def main():
             "base_material_objects":sum(len(v) for v in base_materials.values()),
             "skin_material_objects":sum(len(v) for v in skin_materials.values()),
             "texture_replacements":len(replacements),
+            "incompatible_overrides_skipped":len(skipped_incompatible),
         }
         audit["limitations"]=[
             "This is a local visual texture override only; it does not change inventory ownership, server state, or other players' view.",
