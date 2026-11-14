@@ -39,7 +39,6 @@ jobs:
           import zipfile, pathlib, json, hashlib
           z = zipfile.ZipFile("reference.ipa")
           names = z.namelist()
-          app_prefixes = sorted({n.split("/")[1] for n in names if n.startswith("Payload/") and n.count("/") >= 2 and n.endswith(".app/")})
           app_root = "Payload/CounterFlame.app/"
           targets = {
             "CounterFlameKAlert551.dylib": [n for n in names if n == app_root + "Frameworks/CounterFlameKAlert551.dylib"],
@@ -63,7 +62,31 @@ jobs:
           if report["files"]["CounterFlameKAlert551.dylib"].get("status") == "not_found":
               raise SystemExit("Reference inventory dylib missing")
           PY
-      - name: Upload runtime evidence for local static analysis
+      - name: Produce local-inventory symbol triage
+        run: |
+          python - <<'PY'
+          import re, json, pathlib
+          root = pathlib.Path("runtime-evidence")
+          data = (root / "CounterFlameKAlert551.dylib").read_bytes()
+          strings = [x.decode("utf-8","replace") for x in re.findall(rb"[ -~]{4,}", data)]
+          terms = ("inventory","arsenal","cosmetic","skin","glove","knife","weapon","stattrak","sticker","equip","visualize","setskin","getskin","createitems","playerprefs","local-preview")
+          hits = []
+          for i, s in enumerate(strings):
+              if any(t in s.lower() for t in terms):
+                  hits.append({"index":i,"text":s[:300]})
+          report = {
+            "scope":"Read-only printable-string triage only; no binary modification or runtime execution.",
+            "dylib_bytes":len(data),
+            "printable_string_count":len(strings),
+            "inventory_related_strings":hits
+          }
+          (root/"inventory-symbol-triage.json").write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding="utf-8")
+          lines = ["# Local inventory symbol triage","",f"- Dylib bytes: {len(data)}",f"- Printable strings: {len(strings)}",f"- Matched strings: {len(hits)}","","String evidence is not proof of runtime behavior."]
+          lines += [f"- [{h['index']}] {h['text']}" for h in hits]
+          (root/"inventory-symbol-triage.md").write_text("\n".join(lines),encoding="utf-8")
+          print(f"Found {len(hits)} inventory-related printable strings.")
+          PY
+      - name: Upload runtime evidence and triage
         uses: actions/upload-artifact@v4
         with:
           name: reference-inventory-runtime-evidence
