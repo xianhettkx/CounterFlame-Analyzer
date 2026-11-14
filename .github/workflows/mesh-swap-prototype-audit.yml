@@ -1,6 +1,13 @@
 name: Mesh Swap Prototype Audit
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "src/unity_mesh_swap_prototype.py"
+      - "src/unity_mesh_swap_plan.py"
+      - "config/local_skin_pseudo_entity_map.json"
+      - ".github/workflows/mesh-swap-prototype-audit.yml"
   pull_request:
     branches: [main]
     paths:
