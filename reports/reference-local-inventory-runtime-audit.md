@@ -48,3 +48,17 @@ A follow-up extraction run completed successfully:
 **Interpretation:** the app executable explicitly declares a direct dynamic-library dependency on the bundled dylib. Therefore, the earlier assumption that the module must be loaded only by an external MobileSubstrate injector is not supported. The MobileSubstrate path is the dylib's install-name identity; it does not override the executable's `@executable_path/Frameworks` load command. This static result still does not prove successful runtime loading, signing validity, or execution on a non-jailbroken device.
 
 The linkage JSON is included in artifact `14115396427` as `macho-linkage-analysis.json`. The corrected parser was validated by a successful Actions run.
+
+## Stock-versus-reference executable linkage comparison (2026-11-14)
+
+A separate workflow downloaded and SHA-256-verified the stock IPA, extracted both app executables, and parsed their Mach-O load commands. The run completed successfully:
+
+- GitHub Actions run: `43598852365`.
+- Evidence artifact: `reference-inventory-runtime-evidence`, artifact ID `14115332326`.
+- Reference executable: `CounterFlame`, 66,368 bytes.
+- Stock executable: `CounterFlame-stock`, 66,368 bytes.
+- Reference executable has `LC_LOAD_DYLIB @executable_path/Frameworks/CounterFlameKAlert551.dylib`.
+- Stock executable has no load command for `CounterFlameKAlert551.dylib`.
+- The reference dylib is present in the reference IPA at `Frameworks/CounterFlameKAlert551.dylib`; its install-name identity is `/Library/MobileSubstrate/DynamicLibraries/CounterFlameKAlert551.dylib`.
+
+**Conclusion:** the reference package differs from stock at the main executable's dynamic-library dependency table: the reference executable explicitly loads the bundled module, while the stock executable does not. The install-name string is a separate piece of metadata and should not be mistaken for proof that the module is loaded only through an external injector. This is static linkage evidence only; it does not prove runtime success, signing compatibility, or behavior on a stock iOS device.
