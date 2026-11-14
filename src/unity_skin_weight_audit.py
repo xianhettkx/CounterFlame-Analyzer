@@ -75,8 +75,12 @@ def main():
             except Exception as exc:
                 rows.append({"skin_key":skin,"mesh_path_id":mesh_id,"error":f"{type(exc).__name__}: {exc}"[:200]})
                 continue
-            handler=MeshHandler(mesh)
-            handler.process()
+            try:
+                handler=MeshHandler(mesh)
+                handler.process()
+            except Exception as exc:
+                rows.append({"skin_key":skin,"mesh_path_id":mesh_id,"mesh_name":str(get_value(mesh,"m_Name","") or ""),"error":f"MeshHandler {type(exc).__name__}: {exc}"[:240]})
+                continue
             skin_data=getattr(handler,"m_BoneWeights",None) or []
             bone_indices_data=getattr(handler,"m_BoneIndices",None) or []
             bindposes=get_value(mesh,"m_BindPose",[]) or []
