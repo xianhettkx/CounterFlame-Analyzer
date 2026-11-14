@@ -11,9 +11,10 @@ INTERESTING_TYPES = {"GameObject","Transform","MeshFilter","MeshRenderer","Skinn
 def ptr_fields(value: Any, prefix: str = "", depth: int = 0):
     if depth > 7 or value is None or isinstance(value,(str,bytes,int,float,bool)):
         return
-    if hasattr(value,"path_id") and hasattr(value,"file_id"):
+    if (hasattr(value,"m_PathID") and hasattr(value,"m_FileID")) or (hasattr(value,"path_id") and hasattr(value,"file_id")):
         try:
-            pid=int(value.path_id); fid=int(value.file_id)
+            pid=int(getattr(value,"m_PathID",getattr(value,"path_id",0)))
+            fid=int(getattr(value,"m_FileID",getattr(value,"file_id",0)))
             if pid:
                 yield {"field":prefix,"file_id":fid,"path_id":pid}
         except Exception:
