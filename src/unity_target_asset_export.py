@@ -108,8 +108,11 @@ def run(ipa: Path, reports: Path, out: Path) -> dict[str, Any]:
         texture_name=f"{safe_name(spec['texture'])}.png"
         texture_target=skin_dir/texture_name
         shutil.copy2(texture_source,texture_target)
-        mtl_text="newmtl SkinAlbedo\nKa 0.15 0.15 0.15\nKd 1.0 1.0 1.0\nKs 0.15 0.15 0.15\nNs 32.0\nd 1.0\nillum 2\nmap_Kd "+texture_name+"\n"
-        (skin_dir/mtl_name).write_text(mtl_text,encoding="utf-8")
+        mtl_lines=[
+            "newmtl SkinAlbedo","Ka 0.15 0.15 0.15","Kd 1.0 1.0 1.0",
+            "Ks 0.15 0.15 0.15","Ns 32.0","d 1.0","illum 2","map_Kd "+texture_name
+        ]
+        (skin_dir/mtl_name).write_text("\n".join(mtl_lines)+"\n",encoding="utf-8")
         source_text=source_obj.read_text(encoding="utf-8",errors="replace")
         lines=source_text.splitlines()
         decorated=[f"mtllib {mtl_name}"]
