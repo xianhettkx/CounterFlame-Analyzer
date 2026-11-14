@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Export only the verified target base meshes and their material dependency textures."""
 from __future__ import annotations
-import argparse, json, re, zipfile
+import argparse, json, re, zipfile, tempfile
 from pathlib import Path
 from typing import Any
 
@@ -31,21 +31,35 @@ def run(ipa: Path, reports: Path, out: Path) -> dict[str, Any]:
     mesh_dir.mkdir(exist_ok=True); tex_dir.mkdir(exist_ok=True)
     manifest={"ipa_sha256":None,"mesh_exports":[],"texture_exports":[],"texture_bundle_count":len(texture_bundles),"limitations":["OBJ files contain static mesh geometry; skeletal weights, rig hierarchy, and animation clips are not represented in OBJ.","Texture files are exported as PNG previews without changing the IPA.","No IPA contents are modified or rebuilt."]}
     with zipfile.ZipFile(ipa,"r") as zf:
-        resources_path=next((n for n in zf.namelist() if n.endswith("/resources.assets")),None)
+        names=zf.namelist()
+        resources_path=next((n for n in names if n.endswith("/resources.assets")),None)
         if not resources_path: raise RuntimeError("resources.assets not found")
-        env=UnityPy.load(zf.read(resources_path))
-        objects={int(o.path_id):o for o in env.objects}
-        seen=set()
-        for skin,ids in MESH_IDS.items():
-            for pid in ids:
-                if pid in seen or pid not in objects: continue
-                seen.add(pid); obj=objects[pid]
-                if getattr(getattr(obj,"type",None),"name","")!="Mesh": continue
-                mesh=obj.read(); name=str(getattr(mesh,"m_Name","") or obj.peek_name() or f"mesh_{pid}")
-                filename=f"{safe_name(skin)}__{safe_name(name)}__{pid}.obj"
-                target=mesh_dir/filename
-                target.write_text(mesh.export(),encoding="utf-8",newline="")
-                manifest["mesh_exports"].append({"skin_key":skin,"path_id":pid,"mesh_name":name,"file":str(Path("target_meshes")/filename),"bytes":target.stat().st_size})
+        # Unity stores streamed mesh vertex data beside resources.assets. The IPA names this file
+        # resources.resource; provide UnityPy the conventional companion alias it requests.
+        resource_path=next((n for n in names if n.endswith("/resources.assets.resS")),None)
+        if not resource_path:
+            resource_path=next((n for n in names if n.endswith("/resources.resource")),None)
+        with tempfile.TemporaryDirectory(prefix="cf_unity_mesh_") as temp_dir:
+            temp_root=Path(temp_dir)
+            asset_copy=temp_root/"resources.assets"
+            asset_copy.write_bytes(zf.read(resources_path))
+            if resource_path:
+                resource_bytes=zf.read(resource_path)
+                (temp_root/"resources.assets.resS").write_bytes(resource_bytes)
+                (temp_root/"resources.assets.resource").write_bytes(resource_bytes)
+            env=UnityPy.load(str(asset_copy))
+            objects={int(o.path_id):o for o in env.objects}
+            seen=set()
+            for skin,ids in MESH_IDS.items():
+                for pid in ids:
+                    if pid in seen or pid not in objects: continue
+                    seen.add(pid); obj=objects[pid]
+                    if getattr(getattr(obj,"type",None),"name","")!="Mesh": continue
+                    mesh=obj.read(); name=str(getattr(mesh,"m_Name","") or obj.peek_name() or f"mesh_{pid}")
+                    filename=f"{safe_name(skin)}__{safe_name(name)}__{pid}.obj"
+                    target=mesh_dir/filename
+                    target.write_text(mesh.export(),encoding="utf-8",newline="")
+                    manifest["mesh_exports"].append({"skin_key":skin,"path_id":pid,"mesh_name":name,"file":str(Path("target_meshes")/filename),"bytes":target.stat().st_size})
         for index,bundle_path in enumerate(sorted(texture_bundles),1):
             if bundle_path not in zf.namelist(): continue
             try: benv=UnityPy.load(zf.read(bundle_path))
