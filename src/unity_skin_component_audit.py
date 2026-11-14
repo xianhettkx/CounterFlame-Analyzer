@@ -58,7 +58,7 @@ def main():
     meta={pid:{"path_id":pid,"type":getattr(getattr(o,"type",None),"name","Unknown"),"name":safe_name(o)}
           for pid,o in objects.items()}
     def resolve(p):
-        pid=p["path_id"]; return {**p,**meta.get(pid,{"type":"external_or_unindexed","name":""})}
+        pid=p['path_id']; return {**p,**meta.get(pid,{"type":"external_or_unindexed","name":""})}
     rows=[]; seen=set()
     for go in objects.values():
         if getattr(getattr(go,"type",None),"name","")!="GameObject": continue
@@ -68,16 +68,16 @@ def main():
         except Exception: continue
         components=[]
         for p in ptr_fields(getattr(gd,"m_Component",[]),"m_Component"):
-            comp=objects.get(p["path_id"])
+            comp=objects.get(p['path_id'])
             if comp is None: continue
-            ctype=meta[p["path_id"]]["type"]
+            ctype=meta[p['path_id']]["type"]
             if ctype!="MonoBehaviour": continue
             try: data=comp.read()
             except Exception as exc:
-                components.append({"component":meta[p["path_id"]],"read_error":str(exc)[:250]}); continue
+                components.append({"component":meta[p['path_id']],"read_error":str(exc)[:250]}); continue
             refs=[resolve(x) for x in ptr_fields(data)]
             script_ref=next((x for x in refs if x.get("field","").endswith("m_Script")),None)
-            script=meta.get(script_ref["path_id"],{}) if script_ref else {}
+            script=meta.get(script_ref['path_id'],{}) if script_ref else {}
             row={"owner_gameobject":meta[int(go.path_id)],"component":meta[p["path_id]],
                  "script":script,"script_pointer":script_ref,"references":refs}
             try:
