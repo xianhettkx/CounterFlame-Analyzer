@@ -1,4 +1,4 @@
-name: Local Skin Patch Audit
+name: Local Skin Patch + Chinese UI
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/local-skin-patch.yml'
       - 'src/unity_local_skin_patch.py'
+      - 'src/unity_chinese_localization.py'
       - 'src/package_local_skin_patch.py'
   workflow_dispatch:
 
@@ -13,9 +14,9 @@ permissions:
   contents: read
 
 jobs:
-  audit:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - name: Checkout analyzer
         uses: actions/checkout@v4
@@ -50,23 +51,30 @@ jobs:
           if actual != expected: raise SystemExit("Original IPA SHA256 verification failed")
           PY
 
-      - name: Audit local material and texture replacement paths
+      - name: Audit local skin material and texture paths
         run: python src/unity_local_skin_patch.py input.ipa --out reports/local_skin_patch
 
-      - name: Apply verified local texture overrides
+      - name: Apply local skin texture overrides
         run: python src/unity_local_skin_patch.py input.ipa --out reports/local_skin_patch_applied --apply
 
-      - name: Build unsigned local-patched IPA
-        run: python src/package_local_skin_patch.py input.ipa reports/local_skin_patch_applied/resources.assets --out CounterFlame-Local-Skin-Patch.ipa
+      - name: Build temporary IPA for localization scan
+        run: python src/package_local_skin_patch.py input.ipa reports/local_skin_patch_applied/resources.assets --out CounterFlame-Skin-Intermediate.ipa
 
-      - name: Upload local skin patch audit
+      - name: Scan and apply Simplified Chinese UI translations
+        run: python src/unity_chinese_localization.py CounterFlame-Skin-Intermediate.ipa --out-dir reports/chinese_localization
+
+      - name: Build final local skin + Chinese IPA
+        run: python src/package_local_skin_patch.py input.ipa reports/local_skin_patch_applied/resources.assets --patch-dir reports/chinese_localization/files --out CounterFlame-Local-Skin-Chinese.ipa
+
+      - name: Upload local patch and localization report
         uses: actions/upload-artifact@v4
         with:
-          name: counterflame-local-skin-patch-audit
+          name: counterflame-local-skin-chinese
           path: |
             reports/local_skin_patch/
             reports/local_skin_patch_applied/
-            CounterFlame-Local-Skin-Patch.ipa
+            reports/chinese_localization/
+            CounterFlame-Local-Skin-Chinese.ipa
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
