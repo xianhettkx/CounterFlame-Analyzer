@@ -105,6 +105,17 @@ def main()->int:
     # Join renderer references by their owning GameObject to prove Mesh-to-Material assignments.
     go_by_id={pid:info for pid,info in meta.items() if info["type"]=="GameObject"}
     assignment_groups={}
+    materials_by_gameobject={}
+    for component in renderers:
+        refs=component["references"]
+        go_ref=next((r for r in refs if r.get("field")=="m_GameObject"),None)
+        if not go_ref: continue
+        mats=[r.get("name","") for r in refs if r.get("type")=="Material" and "m_Materials" in r.get("field","")]
+        if mats:
+            materials_by_gameobject.setdefault(go_ref["path_id"],[])
+            for mat in mats:
+                if mat not in materials_by_gameobject[go_ref["path_id"]]:
+                    materials_by_gameobject[go_ref["path_id"]].append(mat)
     for component in renderers:
         refs=component["references"]
         go_ref=next((r for r in refs if r.get("field")=="m_GameObject"),None)
@@ -115,6 +126,8 @@ def main()->int:
         mesh_name=mesh_ref.get("name","")
         if not any(t in (go_name+" "+mesh_name).lower() for t in TARGET_RE): continue
         materials=[r.get("name","") for r in refs if r.get("type")=="Material" and "m_Materials" in r.get("field","")]
+        if not materials:
+            materials=materials_by_gameobject.get(go_ref["path_id"],[])
         key=(go_name,component["object"]["type"],mesh_name,tuple(materials))
         item=assignment_groups.setdefault(key,{"gameobject_name":go_name,"component_type":component["object"]["type"],"mesh_name":mesh_name,"mesh_path_id":mesh_ref["path_id"],"material_names":materials,"gameobject_path_ids":[],"component_path_ids":[]})
         item["gameobject_path_ids"].append(go_ref["path_id"])
@@ -137,9 +150,19 @@ def main()->int:
                         material_data=material_obj.read()
                         refs=[]
                         externals=getattr(getattr(material_obj,"assets_file",None),"externals",[]) or []
+                        tex_envs=getattr(getattr(material_data,"m_SavedProperties",None),"m_TexEnvs",[]) or []
+                        tex_property_names=[]
+                        for entry in tex_envs:
+                            try: tex_property_names.append(str(entry[0]))
+                            except Exception: tex_property_names.append("")
                         for ptr in ptr_fields(material_data):
                             fid=ptr["file_id"]
                             target={"field":ptr["field"],"file_id":fid,"path_id":ptr["path_id"]}
+                            prop_match=__import__("re").search(r"m_TexEnvs\\[(\\d+)\\]",ptr["field"])
+                            if prop_match:
+                                prop_index=int(prop_match.group(1))
+                                if prop_index<len(tex_property_names):
+                                    target["texture_property"]=tex_property_names[prop_index]
                             if fid==0 and ptr["path_id"] in bmap:
                                 target["target_type"]=getattr(getattr(bmap[ptr["path_id"]],"type",None),"name","Unknown")
                                 try: target["target_name"]=str(bmap[ptr["path_id"]].peek_name() or "")
@@ -147,7 +170,7 @@ def main()->int:
                             elif fid>0 and fid-1<len(externals):
                                 target["external_file"]=str(getattr(externals[fid-1],"path","") or "")
                             refs.append(target)
-                        skin_material_bundles.append({"bundle_path":bundle_path,"material_name":str(getattr(material_data,"m_Name","") or ""),"references":refs})
+                        skin_material_bundles.append({"bundle_path":bundle_path,"material_name":str(getattr(material_data,"m_Name","") or ""),"texture_property_count":len(tex_property_names),"references":refs})
                     except Exception as exc:
                         skin_material_bundles.append({"bundle_path":bundle_path,"material_path_id":int(material_obj.path_id),"material_read_error":f"{type(exc).__name__}: {exc}"[:300]})
             except Exception as exc:
