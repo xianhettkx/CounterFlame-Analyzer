@@ -8,9 +8,24 @@ from pathlib import Path
 ASCII_RUN = re.compile(rb"[ -~]{3,160}")
 LIKELY = re.compile(r"[\u4e00-\u9fff]")
 
+def human_text(value):
+    value=value.strip()
+    if not 2 <= len(value) <= 160:
+        return False
+    if any(ord(ch)<32 and ch not in "\\t\\r\\n" for ch in value):
+        return False
+    if sum(ch.isprintable() for ch in value)/len(value) < 0.98:
+        return False
+    # Keep actual Chinese text or readable natural-language labels; reject
+    # binary payloads that merely decode into occasional CJK characters.
+    if LIKELY.search(value):
+        return True
+    words=re.findall(r"[A-Za-z]{2,}",value)
+    return bool(words) and (len(words)>=2 or (len(value)<=32 and value.isalpha()))
+
 def walk(value, path="$"):
     if isinstance(value, str):
-        if 2 <= len(value.strip()) <= 160 and LIKELY.search(value):
+        if human_text(value):
             yield path, value
     elif isinstance(value, dict):
         for k, v in value.items():
@@ -30,14 +45,19 @@ def scan_blob(raw, archive_path):
                 data=obj.read()
                 src=getattr(data,"m_Script",None)
                 if isinstance(src, bytes):
-                    text=src.decode("utf-8-sig", "ignore")
+                    # Strict decoding is intentional: binary TextAssets such as
+                    # PVS/mesh payloads must never be treated as localization.
+                    try:
+                        text=src.decode("utf-8-sig", "strict")
+                    except UnicodeDecodeError:
+                        continue
                 elif isinstance(src, str):
                     text=src
                 else:
                     continue
                 for line_no,line in enumerate(text.splitlines(),1):
                     line=line.strip()
-                    if 2 <= len(line) <= 160 and LIKELY.search(line):
+                    if human_text(line):
                         found.append({"asset":archive_path,"path_id":obj.path_id,"type":typ,
                                       "name":getattr(data,"m_Name",""),"field":f"line:{line_no}","text":line})
             elif typ == "MonoBehaviour":
@@ -53,7 +73,7 @@ def scan_blob(raw, archive_path):
                     if isinstance(raw_data,bytes):
                         for match in ASCII_RUN.finditer(raw_data):
                             value=match.group().decode("ascii","ignore").strip()
-                            if LIKELY.search(value):
+                            if human_text(value):
                                 found.append({"asset":archive_path,"path_id":obj.path_id,"type":typ,
                                               "name":getattr(data,"m_Name",""),"field":f"raw+{match.start()}","text":value})
         except Exception:
