@@ -80,6 +80,45 @@ def scan_blob(raw, archive_path):
             continue
     return found
 
+
+UI_WORDS = {"play","settings","inventory","market","store","loadout","weapon","weapons","gloves","stickers","agents","case","open","close","back","cancel","confirm","search","filter","buy","sell","equip","unequip","inspect","loading","error","retry","continue","exit","resume","matchmaking","ranked","casual","competitive","deathmatch","team","profile","friends"}
+
+def native_candidate(value):
+    value = value.strip().strip("\\x00")
+    if not 2 <= len(value) <= 180 or not value.isprintable():
+        return False
+    if any(ch in value for ch in ("_", "/", "\\\\", "://", "{", "}", "<", ">", "$", "=")):
+        return False
+    words = re.findall(r"[A-Za-z][A-Za-z'-]*", value)
+    if len(words) >= 2 and " " in value:
+        return True
+    return len(words) == 1 and words[0].casefold() in UI_WORDS
+
+def scan_native_binaries(zf):
+    """Read candidate strings from IL2CPP metadata and app binaries; never modify them."""
+    candidates = {}
+    wanted = ("global-metadata.dat", "/unityframework", "/counterflame")
+    for info in zf.infolist():
+        name = info.filename.lower()
+        if not any(token in name for token in wanted) or info.file_size > 120 * 1024 * 1024:
+            continue
+        try:
+            raw = zf.read(info)
+        except Exception:
+            continue
+        patterns = (("ascii", re.compile(rb"[\\x20-\\x7e]{3,180}")),
+                    ("utf16le", re.compile(rb"(?:[\\x20-\\x7e]\\x00){3,180}")))
+        for encoding, pattern in patterns:
+            for match in pattern.finditer(raw):
+                try:
+                    value = match.group().decode("ascii" if encoding == "ascii" else "utf-16le").strip()
+                except UnicodeDecodeError:
+                    continue
+                if native_candidate(value):
+                    key = (value, info.filename, encoding)
+                    candidates.setdefault(key, {"text":value,"source":info.filename,"encoding":encoding,"offset":match.start()})
+    return sorted(candidates.values(), key=lambda x:(x["text"].casefold(),x["source"],x["offset"]))
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("ipa")
@@ -103,8 +142,14 @@ def main():
             "candidate_occurrences":len(rows),"unique_strings":len(by_text),
             "errors":errors,"strings":sorted(by_text.values(),key=lambda x:(x["text"].casefold(),x["text"]))}
     (out/"localization_string_inventory.json").write_text(json.dumps(report,ensure_ascii=True,indent=2),encoding="utf-8")
+    native = scan_native_binaries(zf)
+    native_report = {"mode":"read_only_native_string_discovery",
+                     "binary_files_scanned":sorted({x["source"] for x in native}),
+                     "candidate_occurrences":len(native),"strings":native}
+    (out/"native_ui_string_candidates.json").write_text(json.dumps(native_report,ensure_ascii=True,indent=2),encoding="utf-8")
     counts=Counter(r["type"] for r in rows)
     print(json.dumps({"assets_scanned":scanned,"candidate_occurrences":len(rows),
-                      "unique_strings":len(by_text),"by_type":dict(counts),"errors":len(errors)},ensure_ascii=False))
+                      "unique_strings":len(by_text),"by_type":dict(counts),
+                      "native_candidates":len(native),"errors":len(errors)},ensure_ascii=False))
     print(f"[OK] {out/'localization_string_inventory.json'}")
 if __name__=="__main__": main()
