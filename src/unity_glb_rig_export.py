@@ -99,6 +99,7 @@ def export(ipa:Path, reports:Path, out:Path):
     renderer_obj=None
     renderer_data=None
     selected_material_names=[]
+    renderer_candidates=[]
     for obj in env.objects:
         if getattr(getattr(obj,"type",None),"name","")!="SkinnedMeshRenderer": continue
         try: data=obj.read()
@@ -106,7 +107,9 @@ def export(ipa:Path, reports:Path, out:Path):
         ptr=val(data,"m_Mesh")
         if int(val(ptr,"m_PathID",0) or 0)!=MESH_ID: continue
         bone_ptrs=val(data,"m_Bones",[]) or []
-        if len(bone_ptrs)!=len(bindposes): continue
+        candidate_ids=[int(val(bp,"m_PathID",0) or 0) for bp in bone_ptrs]
+        candidate_file_ids=[int(val(bp,"m_FileID",0) or 0) for bp in bone_ptrs]
+        missing=[pid for pid in candidate_ids if pid<=0 or pid not in objects]
         mats=val(data,"m_Materials",[]) or []
         names_for_renderer=[]
         for mp in mats:
@@ -115,10 +118,16 @@ def export(ipa:Path, reports:Path, out:Path):
             try: names_for_renderer.append(str(val(material.read(),"m_Name","") or "") if material else "")
             except Exception: names_for_renderer.append("")
         if any("glove_specialist" in n.lower() for n in names_for_renderer):
+            renderer_candidates.append({"renderer_path_id":int(obj.path_id),"bone_count":len(bone_ptrs),"bind_pose_count":len(bindposes),"missing_bone_ids":missing[:8],"external_file_id_count":sum(1 for fid in candidate_file_ids if fid!=0),"materials":names_for_renderer})
+        root_ptr=val(data,"m_RootBone")
+        root_id=int(val(root_ptr,"m_PathID",0) or 0)
+        if len(bone_ptrs)!=len(bindposes) or missing or any(fid!=0 for fid in candidate_file_ids) or root_id not in objects:
+            continue
+        if any("glove_specialist" in n.lower() for n in names_for_renderer):
             renderer_obj=obj; renderer_data=data; selected_material_names=names_for_renderer
             break
     if renderer_obj is None:
-        raise RuntimeError("No renderer found with a bone count matching bind poses and glove material slots")
+        raise RuntimeError("No fully resolvable glove renderer matches bind poses. Candidates: "+json.dumps(renderer_candidates,ensure_ascii=False))
     bone_ptrs=val(renderer_data,"m_Bones",[]) or []
     bone_ids=[int(val(p,"m_PathID",0) or 0) for p in bone_ptrs]
     if len(bone_ids)!=len(bindposes) or any(pid not in objects for pid in bone_ids):
