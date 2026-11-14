@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "project": "CounterFlame local-only visual skin mapping",
+  "source_build": {
+    "game": "CounterFlame",
+    "version": "1.4.1-c7-ios.2",
+    "unity": "2021.3.45f1",
+    "asset": "Payload/CounterFlame.app/Data/resources.assets"
+  },
+  "mode": "offline_mapping_manifest",
+  "safety": {
+    "server_inventory_modified": false,
+    "account_entitlements_modified": false,
+    "network_or_anticheat_modified": false,
+    "runtime_injection": false
+  },
+  "status": "asset_mapping_confirmed_runtime_activation_unverified",
+  "skins": [
+    {
+      "key": "butterfly_marblefade",
+      "display_name": "Butterfly Knife | Marble Fade",
+      "weapon": "Butterfly Knife",
+      "first_person": {
+        "mesh": "v_knife_t_v_knife_flip_reference",
+        "mesh_path_id": 2233,
+        "base_materials": [
+          "knife_flip"
+        ]
+      },
+      "third_person": {
+        "mesh": "tps_Butterfly",
+        "mesh_path_id": 2048,
+        "base_materials": [
+          "butterfly_vanilla_tps_Diffuse"
+        ]
+      },
+      "skin_materials": [
+        "butterfly_marblefade_PBR",
+        "butterfly_marblefade_Diffuse",
+        "butterfly_marblefade_Specular"
+      ],
+      "textures": [
+        "butterfly_marblefade_paint.png",
+        "butterfly_marblefade_cs2.png",
+        "smoke2.png",
+        "butterfly_butterfly_marblefade__cs2_mask.png"
+      ],
+      "controller": [
+        "butterfly",
+        "flip"
+      ]
+    },
+    {
+      "key": "specialist_pillow",
+      "display_name": "Specialist Gloves | Pillow Punchers",
+      "weapon": "Specialist Gloves",
+      "first_person": {
+        "mesh": "v_glove_ct_specialist",
+        "mesh_path_ids": [
+          2000,
+          2215,
+          2216,
+          2217
+        ],
+        "base_materials": [
+          "glove_specialist_left",
+          "glove_specialist_right"
+        ]
+      },
+      "third_person": {
+        "mesh": "v_glove_ct_specialist_ct",
+        "mesh_path_id": 2115,
+        "base_materials": [
+          "glove_specialist_left",
+          "glove_specialist_right",
+          "cthand"
+        ]
+      },
+      "skin_materials": [
+        "specialist_pillow_PBR",
+        "specialist_pillow_Diffuse",
+        "specialist_pillow_Specular"
+      ],
+      "textures": [
+        "glove_specialist_left",
+        "glove_specialist_left_normal",
+        "gloves_specialist_bigswell_mask.png"
+      ],
+      "controller": []
+    },
+    {
+      "key": "awp_dragonlore",
+      "display_name": "AWP | Dragon Lore",
+      "weapon": "AWP",
+      "first_person": {
+        "mesh": "v_snip_awp_awp_model",
+        "mesh_path_id": 2114,
+        "base_materials": [
+          "awp",
+          "awpScope"
+        ]
+      },
+      "third_person": {
+        "mesh": "w_snip_awp",
+        "mesh_path_id": 1980,
+        "base_materials": [
+          "awp_pbr",
+          "scope_lens"
+        ]
+      },
+      "skin_materials": [
+        "awp_dragonlore_PBR",
+        "awp_dragonlore_Diffuse",
+        "awp_dragonlore_Specular"
+      ],
+      "textures": [
+        "awp_dragonlore_cs2.png",
+        "awp_normal.png",
+        "awp_awp_dragonlore__cs2_mask.png"
+      ],
+      "controller": [
+        "awp_a_new"
+      ]
+    },
+    {
+      "key": "ak47_neonrevolution",
+      "display_name": "AK-47 | Neon Revolution",
+      "weapon": "AK-47",
+      "first_person": {
+        "mesh": "v_rif_ak47_reference1",
+        "mesh_path_id": 2231,
+        "base_materials": [
+          "ak47_default_PBR"
+        ]
+      },
+      "third_person": {
+        "mesh": "AK47",
+        "mesh_path_id": 2043,
+        "base_materials": [
+          "ak47_default_tps_Diffuse"
+        ]
+      },
+      "skin_materials": [
+        "ak47_neonrevolution_PBR",
+        "ak47_neonrevolution_Diffuse",
+        "ak47_neonrevolution_Specular"
+      ],
+      "textures": [
+        "ak47_neonrevolution_cs2.png",
+        "ak47_normal.png",
+        "ak47_ak47_neonrevolution__cs2_mask.png"
+      ],
+      "controller": [
+        "ak47",
+        "ak47_a"
+      ]
+    },
+    {
+      "key": "m4a4_emperor",
+      "display_name": "M4A4 | The Emperor",
+      "weapon": "M4A4",
+      "first_person": {
+        "mesh": "v_rif_m4a1_reference1",
+        "mesh_path_id": 1926,
+        "base_materials": [
+          "m4a4"
+        ]
+      },
+      "third_person": {
+        "mesh": "M4A402100",
+        "mesh_path_id": 2062,
+        "base_materials": [
+          "m4a4_Diffuse",
+          "agent_m4a4_Diffuse"
+        ]
+      },
+      "skin_materials": [
+        "m4a4_emperor_PBR",
+        "m4a4_emperor_Diffuse",
+        "m4a4_emperor_Specular"
+      ],
+      "textures": [
+        "m4a4_emperor_cs2.png",
+        "m4a4_emperor_cs2_low",
+        "m4a1_m4a4_emperor__cs2_mask.png"
+      ],
+      "controller": [
+        "m4a4"
+      ]
+    },
+    {
+      "key": "deagle_codered",
+      "display_name": "Desert Eagle | Code Red",
+      "weapon": "Desert Eagle",
+      "first_person": {
+        "mesh": "v_pist_deagle_deagle_model",
+        "mesh_path_id": 2112,
+        "base_materials": [
+          "pist_deagle"
+        ]
+      },
+      "third_person": {
+        "mesh": "Deagle00400",
+        "mesh_path_id": 2050,
+        "base_materials": [
+          "pist_deagle_Diffuse"
+        ]
+      },
+      "skin_materials": [
+        "deagle_codered_PBR",
+        "deagle_codered_Diffuse",
+        "deagle_codered_Specular"
+      ],
+      "textures": [
+        "deagle_codered_cs2.png",
+        "deagle_codered_cs2_normal.png",
+        "deserteagle_deagle_codered__cs2_mask.png"
+      ],
+      "controller": [
+        "deagle"
+      ]
+    }
+  ],
+  "activation_requirements": [
+    "resolve_skin_selection_or_equipment_path",
+    "confirm_local_render_override_entrypoint",
+    "resolve_all_texture_and_material_dependencies",
+    "validate_first_person_third_person_and_world_models",
+    "device_test_on_signed_local_build"
+  ],
+  "limitations": [
+    "This manifest records statically confirmed asset names and path IDs for this exact IPA only.",
+    "It does not inject a runtime hook or alter serialized renderer references.",
+    "It does not claim the skins are equipped or rendered in a live match."
+  ]
+}
