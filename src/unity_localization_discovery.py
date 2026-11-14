@@ -97,7 +97,7 @@ def native_candidate(value):
 def scan_native_binaries(zf):
     """Read candidate strings from IL2CPP metadata and app binaries; never modify them."""
     candidates = {}
-    wanted = ("global-metadata.dat", "/unityframework", "/counterflame")
+    wanted = ("global-metadata.dat",)
     for info in zf.infolist():
         name = info.filename.lower()
         if not any(token in name for token in wanted) or info.file_size > 120 * 1024 * 1024:
@@ -129,17 +129,6 @@ def scan_native_binaries(zf):
                                         "literal_index":index,"metadata_version":version})
             except (struct.error, ValueError):
                 pass
-        patterns = (("ascii", re.compile(rb"[\x20-\x7e]{3,180}")),
-                    ("utf16le", re.compile(rb"(?:[\x20-\x7e]\x00){3,180}")))
-        for encoding, pattern in patterns:
-            for match in pattern.finditer(raw):
-                try:
-                    value = match.group().decode("ascii" if encoding == "ascii" else "utf-16le").strip()
-                except UnicodeDecodeError:
-                    continue
-                if native_candidate(value):
-                    key = (value, info.filename, encoding)
-                    candidates.setdefault(key, {"text":value,"source":info.filename,"encoding":encoding,"offset":match.start()})
     return sorted(candidates.values(), key=lambda x:(x["text"].casefold(),x["source"],x["offset"]))
 
 def main():
