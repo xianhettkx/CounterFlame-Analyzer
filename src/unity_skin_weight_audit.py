@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Audit Unity mesh skin weights and bind poses for target weapon meshes."""
 from __future__ import annotations
-import argparse, json, zipfile
+import argparse, json, zipfile, tempfile
 from pathlib import Path
 from collections import Counter
 
@@ -26,10 +26,23 @@ def main():
     try: import UnityPy
     except ImportError as exc: raise RuntimeError("UnityPy missing") from exc
     out=Path(a.out); out.mkdir(parents=True,exist_ok=True)
+    temp_context=tempfile.TemporaryDirectory(prefix="cf_skin_audit_")
+    temp_root=Path(temp_context.name)
     with zipfile.ZipFile(a.ipa,"r") as zf:
-        asset_path=next((n for n in zf.namelist() if n.endswith("/resources.assets")),None)
+        names=zf.namelist()
+        asset_path=next((n for n in names if n.endswith("/resources.assets")),None)
         if not asset_path: raise RuntimeError("resources.assets not found")
-        env=UnityPy.load(zf.read(asset_path))
+        asset_copy=temp_root/"resources.assets"
+        asset_copy.write_bytes(zf.read(asset_path))
+        resource_path=next((n for n in names if n.endswith("/resources.assets.resS")),None)
+        if not resource_path:
+            resource_path=next((n for n in names if n.endswith("/resources.resource")),None)
+        if resource_path:
+            resource_bytes=zf.read(resource_path)
+            (temp_root/"resources.assets.resS").write_bytes(resource_bytes)
+            (temp_root/"resources.assets.resource").write_bytes(resource_bytes)
+    env=UnityPy.load(str(asset_copy))
+    from UnityPy.helpers.MeshHelper import MeshHandler
     objects={int(o.path_id):o for o in env.objects}
     renderers_by_mesh={}
     for obj in env.objects:
@@ -62,19 +75,20 @@ def main():
             except Exception as exc:
                 rows.append({"skin_key":skin,"mesh_path_id":mesh_id,"error":f"{type(exc).__name__}: {exc}"[:200]})
                 continue
-            skin_data=get_value(mesh,"m_Skin",[]) or []
+            handler=MeshHandler(mesh)
+            handler.process()
+            skin_data=getattr(handler,"m_BoneWeights",None) or []
+            bone_indices_data=getattr(handler,"m_BoneIndices",None) or []
             bindposes=get_value(mesh,"m_BindPose",[]) or []
-            vertices=get_value(mesh,"m_Vertices",[]) or []
-            uv=get_value(mesh,"m_UV",[]) or []
+            vertices=getattr(handler,"m_Vertices",None) or []
+            uv=getattr(handler,"m_UV0",None) or []
             weights_per_vertex=Counter()
             positive_influences=Counter()
             weight_sums=[]
             sample=[]
-            for index,entry in enumerate(skin_data):
-                weights=[]; bone_indices=[]
-                for slot in range(4):
-                    weights.append(float(get_value(entry,f"weight_{slot}_",0.0) or 0.0))
-                    bone_indices.append(int(get_value(entry,f"boneIndex_{slot}_",0) or 0))
+            for index,(raw_weights,raw_indices) in enumerate(zip(skin_data,bone_indices_data)):
+                weights=[float(x) for x in raw_weights]
+                bone_indices=[int(x) for x in raw_indices]
                 active=sum(1 for w in weights if w>0)
                 weights_per_vertex[active]+=1
                 positive_influences.update(b for b,w in zip(bone_indices,weights) if w>0)
@@ -83,8 +97,8 @@ def main():
             name=str(get_value(mesh,"m_Name","") or obj.peek_name() or "")
             rows.append({
                 "skin_key":skin,"mesh_name":name,"mesh_path_id":mesh_id,
-                "vertex_count":len(vertices) if isinstance(vertices,list) else 0,
-                "uv_count":len(uv) if isinstance(uv,list) else 0,
+                "vertex_count":len(vertices) if vertices is not None else 0,
+                "uv_count":len(uv) if uv is not None else 0,
                 "skin_weight_entry_count":len(skin_data),
                 "bind_pose_count":len(bindposes),
                 "weights_per_vertex":{str(k):v for k,v in sorted(weights_per_vertex.items())},
@@ -121,6 +135,7 @@ def main():
         "The candidate column checks for skin-weight entries, bind poses, and at least one serialized SkinnedMeshRenderer reference. It does not guarantee correct joint ordering, transforms, coordinate conversion, or GLB validation.",
         "The original IPA is read-only."]
     (out/"unity_skin_weight_audit.md").write_text("\n".join(md)+"\n",encoding="utf-8")
+    temp_context.cleanup()
     print(f"[OK] Skin-weight audit: {len(rows)} target mesh records")
     print(f"[REPORT] {out/'unity_skin_weight_audit.md'}")
     return 0
