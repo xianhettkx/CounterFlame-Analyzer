@@ -132,6 +132,8 @@ def export(ipa:Path, reports:Path, out:Path):
             go_data=renderer_go_obj.read()
             for component_pair in (val(go_data,"m_Component",[]) or []):
                 component_ptr=val(component_pair,"component")
+                if component_ptr is None and isinstance(component_pair,(tuple,list)) and len(component_pair)>1:
+                    component_ptr=component_pair[1]
                 component_id=int(val(component_ptr,"m_PathID",0) or 0)
                 component_obj=objects.get(component_id)
                 if component_obj is not None and getattr(getattr(component_obj,"type",None),"name","")=="Transform":
