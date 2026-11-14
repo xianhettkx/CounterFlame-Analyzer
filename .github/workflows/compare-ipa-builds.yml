@@ -1,0 +1,30 @@
+name: Compare Stock and Reference IPA Builds
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/compare_ipa_builds.py"
+      - ".github/workflows/compare-ipa-builds.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download, verify, and compare both IPA archives
+        run: python src/compare_ipa_builds.py
+      - name: Upload structural diff
+        uses: actions/upload-artifact@v4
+        with:
+          name: stock-vs-reference-ipa-diff
+          path: reports/
+          retention-days: 14
