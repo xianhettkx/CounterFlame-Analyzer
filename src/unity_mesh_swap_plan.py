@@ -104,6 +104,13 @@ def evaluate_swap(source: MeshModelRecord, target: MeshModelRecord) -> SwapPlan:
 
     _check(
         plan,
+        "renderer_side_match",
+        not source.side or not target.side or source.side == target.side,
+        f"source side={source.side or 'unknown'} target side={target.side or 'unknown'}",
+    )
+
+    _check(
+        plan,
         "submesh_material_alignment",
         source.submesh_count == 0 or source.submesh_count == len(source.material_names)
         or source.submesh_count == target.submesh_count,
