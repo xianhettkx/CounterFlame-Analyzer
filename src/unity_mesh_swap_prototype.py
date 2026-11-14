@@ -19,6 +19,7 @@ mesh path id, and the plan passes every invariant check.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import zipfile
@@ -311,6 +312,27 @@ def _mesh_record(objs: dict[int, Any], mesh_pid: int, skin_key: str = "", side: 
         bind_pose_count=len(gv(mesh, "m_BindPose", []) or []),
         mesh_is_readable=gv(mesh, "m_IsReadable", None),
     )
+
+    # Hash the actual serialized bind-pose matrices, not only their count.
+    bind_pose_rows: list[list[float]] = []
+    bind_pose_complete = True
+    for matrix in gv(mesh, "m_BindPose", []) or []:
+        values: list[float] = []
+        for row in range(4):
+            for col in range(4):
+                value = gv(matrix, f"e{row}{col}", None)
+                if value is None:
+                    bind_pose_complete = False
+                    break
+                values.append(float(value))
+            if not bind_pose_complete:
+                break
+        if not bind_pose_complete:
+            break
+        bind_pose_rows.append(values)
+    if bind_pose_complete and bind_pose_rows:
+        raw = json.dumps(bind_pose_rows, separators=(",", ":")).encode("utf-8")
+        record.bind_pose_signature = hashlib.sha256(raw).hexdigest()
     # MeshHandler decoding is best-effort; weapon streams may be non-readable.
     try:
         from UnityPy.helpers.MeshHelper import MeshHandler
@@ -353,6 +375,32 @@ def _mesh_record(objs: dict[int, Any], mesh_pid: int, skin_key: str = "", side: 
             else:
                 materials.append(f"<external {m['file_id']}/{m['path_id']}>" if m else "")
         bones = [ptr(b) for b in gv(data, "m_Bones", []) or []]
+        # Preserve ordered bone identity by Transform -> GameObject name.
+        bone_names: list[str] = []
+        bone_names_complete = bool(bones)
+        for bone_ref in bones:
+            if not bone_ref or bone_ref["file_id"] != 0 or bone_ref["path_id"] not in objs:
+                bone_names_complete = False
+                break
+            bone_obj = objs[bone_ref["path_id"]]
+            if bone_obj.type.name != "Transform":
+                bone_names_complete = False
+                break
+            try:
+                bone_data = bone_obj.read()
+                bone_go = ptr(gv(bone_data, "m_GameObject", None))
+                if not bone_go or bone_go["file_id"] != 0 or bone_go["path_id"] not in objs:
+                    bone_names_complete = False
+                    break
+                bone_name = str(gv(objs[bone_go["path_id"]].read(), "m_Name", "") or "")
+                if not bone_name:
+                    bone_names_complete = False
+                    break
+                bone_names.append(bone_name)
+            except Exception:
+                bone_names_complete = False
+                break
+        record.renderer_bone_names = bone_names if bone_names_complete else []
         root = ptr(gv(data, "m_RootBone", None))
         root_name = ""
         if root and root["path_id"] in objs:
