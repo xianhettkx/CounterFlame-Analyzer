@@ -143,22 +143,22 @@ def evaluate_swap(source: MeshModelRecord, target: MeshModelRecord) -> SwapPlan:
         _check(
             plan,
             "bone_order_match",
-            not source.renderer_bone_names or not target.renderer_bone_names
-            or source.renderer_bone_names == target.renderer_bone_names,
+            bool(source.renderer_bone_names and target.renderer_bone_names)
+            and source.renderer_bone_names == target.renderer_bone_names,
             "ordered renderer bone names match"
             if source.renderer_bone_names and target.renderer_bone_names
             and source.renderer_bone_names == target.renderer_bone_names
-            else "ordered renderer bone names differ or are unavailable; runtime verification remains mandatory",
+            else "ordered renderer bone names differ or could not be fully resolved",
         )
         _check(
             plan,
             "bindpose_data_match",
-            not source.bind_pose_signature or not target.bind_pose_signature
-            or source.bind_pose_signature == target.bind_pose_signature,
+            bool(source.bind_pose_signature and target.bind_pose_signature)
+            and source.bind_pose_signature == target.bind_pose_signature,
             "bind-pose matrix signatures match"
             if source.bind_pose_signature and target.bind_pose_signature
             and source.bind_pose_signature == target.bind_pose_signature
-            else "bind-pose matrix signatures differ or are unavailable; runtime verification remains mandatory",
+            else "bind-pose matrix signatures differ or could not be computed",
         )
         _check(
             plan,
