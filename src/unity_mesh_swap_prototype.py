@@ -346,7 +346,8 @@ def _mesh_record(objs: dict[int, Any], mesh_pid: int, skin_key: str = "", side: 
     except Exception as exc:
         record.notes.append(f"MeshHandler: {type(exc).__name__}: {exc}"[:160])
 
-    # Find the owning renderer/filter and copy its static facts.
+    # Find every owning renderer/filter; shared Mesh objects need explicit owner disambiguation.
+    owner_count = 0
     for comp in objs.values():
         if comp.type.name not in ("MeshFilter", "SkinnedMeshRenderer", "MeshRenderer"):
             continue
@@ -357,6 +358,8 @@ def _mesh_record(objs: dict[int, Any], mesh_pid: int, skin_key: str = "", side: 
         mesh_ref = ptr(gv(data, "m_Mesh", None))
         if not mesh_ref or mesh_ref["path_id"] != mesh_pid or mesh_ref["file_id"] != 0:
             continue
+        owner_count += 1
+        record.renderer_owner_count = owner_count
         go_ref = ptr(gv(data, "m_GameObject", None))
         go_name = ""
         if go_ref and go_ref["path_id"] in objs:
@@ -441,9 +444,14 @@ def _mesh_record(objs: dict[int, Any], mesh_pid: int, skin_key: str = "", side: 
                 except Exception:
                     pass
         if record.mesh_is_readable is False:
-            record.notes.append("m_IsReadable=false; geometry may rely on streamed resource data")
-        break  # first owning renderer is enough for the static plan
+            note = "m_IsReadable=false; geometry may rely on streamed resource data"
+            if note not in record.notes:
+                record.notes.append(note)
 
+    if owner_count > 1:
+        record.notes.append(
+            f"multiple renderer owners: {owner_count}; exact renderer/skeleton instance is ambiguous"
+        )
     return record
 
 
