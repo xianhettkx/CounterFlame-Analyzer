@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Build a client-local skin texture override patch for the supplied IPA.
 
+Current scope: mapped weapon material slots only; no fake inventory/equip UI,
+no renderer rebinding, and no runtime hook. Unmapped first-person/glove slots
+remain intentionally untouched until an audit proves their exact dependencies.
+
 This tool only changes local Unity Texture2D payloads referenced by the original
 weapon materials. It does not modify inventory, server data, gameplay logic,
 anti-cheat, or network authorization. It defaults to audit-only mode.
