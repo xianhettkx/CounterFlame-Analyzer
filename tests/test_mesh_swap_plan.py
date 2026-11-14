@@ -1,5 +1,7 @@
 import tempfile
 import unittest
+import sys
+import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -18,6 +20,7 @@ from src.unity_mesh_swap_prototype import (
     decide_apply,
     snapshot_renderer_references,
     snapshot_animator_controller,
+    load_resources,
 )
 
 
@@ -70,6 +73,26 @@ def static_filter(pid):
         material_names=["butterfly_vanilla_tps_Diffuse"],
         mesh_is_readable=False,
     )
+
+
+class ResourceLifetimeTests(unittest.TestCase):
+    def test_extracted_stream_files_remain_available_until_cleanup(self):
+        tmp = Path(tempfile.mkdtemp())
+        ipa = tmp / "fixture.ipa"
+        with zipfile.ZipFile(ipa, "w") as zf:
+            zf.writestr("Payload/Game.app/resources.assets", b"asset-bytes")
+            zf.writestr("Payload/Game.app/resources.assets.resS", b"stream-bytes")
+
+        fake_unitypy = SimpleNamespace(load=lambda path: SimpleNamespace(objects=[]))
+        from unittest.mock import patch
+        with patch.dict(sys.modules, {"UnityPy": fake_unitypy}):
+            env, objs, main_asset, temp_dir = load_resources(ipa, tmp / "out")
+            root = Path(temp_dir.name)
+            self.assertTrue(main_asset.exists())
+            self.assertEqual((root / "resources.assets.resS").read_bytes(), b"stream-bytes")
+            self.assertEqual(objs, {})
+            temp_dir.cleanup()
+            self.assertFalse(root.exists())
 
 
 class MeshSwapPlanTests(unittest.TestCase):
