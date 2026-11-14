@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "src/compare_ipa_builds.py"
+      - "src/audit_reference_binary.py"
       - ".github/workflows/compare-ipa-builds.yml"
 
 permissions:
@@ -22,7 +23,9 @@ jobs:
           python-version: "3.12"
       - name: Download, verify, and compare both IPA archives
         run: python src/compare_ipa_builds.py
-      - name: Upload structural diff
+      - name: Audit modified executable and added dylib strings
+        run: python src/audit_reference_binary.py
+      - name: Upload comparison and static audit reports
         uses: actions/upload-artifact@v4
         with:
           name: stock-vs-reference-ipa-diff
