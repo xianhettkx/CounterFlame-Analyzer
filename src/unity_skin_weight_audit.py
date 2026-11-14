@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+"""Audit Unity mesh skin weights and bind poses for target weapon meshes."""
+from __future__ import annotations
+import argparse, json, zipfile
+from pathlib import Path
+from collections import Counter
+
+TARGETS = {
+    "butterfly_marblefade": [2233],
+    "specialist_pillow": [2217, 2216, 2215, 2000, 2115],
+    "awp_dragonlore": [2114, 2032],
+    "ak47_neonrevolution": [2014, 2231, 1908, 2122],
+    "m4a4_emperor": [1926, 1930, 1916, 1931],
+    "deagle_codered": [2112, 1953],
+}
+
+def get_value(obj, key, default=None):
+    try: return getattr(obj, key)
+    except Exception: return default
+
+def main():
+    p=argparse.ArgumentParser()
+    p.add_argument("ipa")
+    p.add_argument("--out",default="reports")
+    a=p.parse_args()
+    try: import UnityPy
+    except ImportError as exc: raise RuntimeError("UnityPy missing") from exc
+    out=Path(a.out); out.mkdir(parents=True,exist_ok=True)
+    with zipfile.ZipFile(a.ipa,"r") as zf:
+        asset_path=next((n for n in zf.namelist() if n.endswith("/resources.assets")),None)
+        if not asset_path: raise RuntimeError("resources.assets not found")
+        env=UnityPy.load(zf.read(asset_path))
+    objects={int(o.path_id):o for o in env.objects}
+    renderers_by_mesh={}
+    for obj in env.objects:
+        if getattr(getattr(obj,"type",None),"name","")!="SkinnedMeshRenderer": continue
+        try: renderer=obj.read()
+        except Exception: continue
+        mesh_ptr=get_value(renderer,"m_Mesh")
+        mesh_id=int(get_value(mesh_ptr,"m_PathID",0) or 0)
+        if not mesh_id: continue
+        bones=get_value(renderer,"m_Bones",[]) or []
+        game_ptr=get_value(renderer,"m_GameObject")
+        game_id=int(get_value(game_ptr,"m_PathID",0) or 0)
+        game_name=""
+        if game_id in objects:
+            try: game_name=str(get_value(objects[game_id].read(),"m_Name","") or "")
+            except Exception: pass
+        renderers_by_mesh.setdefault(mesh_id,[]).append({
+            "renderer_path_id":int(obj.path_id),
+            "gameobject_path_id":game_id,
+            "gameobject_name":game_name,
+            "bone_count":len(bones),
+            "root_bone_path_id":int(get_value(get_value(renderer,"m_RootBone"),"m_PathID",0) or 0),
+        })
+    rows=[]
+    for skin,ids in TARGETS.items():
+        for mesh_id in ids:
+            obj=objects.get(mesh_id)
+            if obj is None or getattr(getattr(obj,"type",None),"name","")!="Mesh": continue
+            try: mesh=obj.read()
+            except Exception as exc:
+                rows.append({"skin_key":skin,"mesh_path_id":mesh_id,"error":f"{type(exc).__name__}: {exc}"[:200]})
+                continue
+            skin_data=get_value(mesh,"m_Skin",[]) or []
+            bindposes=get_value(mesh,"m_BindPose",[]) or []
+            vertices=get_value(mesh,"m_Vertices",[]) or []
+            uv=get_value(mesh,"m_UV",[]) or []
+            weights_per_vertex=Counter()
+            positive_influences=Counter()
+            weight_sums=[]
+            sample=[]
+            for index,entry in enumerate(skin_data):
+                weights=[]; bone_indices=[]
+                for slot in range(4):
+                    weights.append(float(get_value(entry,f"weight_{slot}_",0.0) or 0.0))
+                    bone_indices.append(int(get_value(entry,f"boneIndex_{slot}_",0) or 0))
+                active=sum(1 for w in weights if w>0)
+                weights_per_vertex[active]+=1
+                positive_influences.update(b for b,w in zip(bone_indices,weights) if w>0)
+                if any(weights): weight_sums.append(sum(weights))
+                if index<3: sample.append({"bone_indices":bone_indices,"weights":weights})
+            name=str(get_value(mesh,"m_Name","") or obj.peek_name() or "")
+            rows.append({
+                "skin_key":skin,"mesh_name":name,"mesh_path_id":mesh_id,
+                "vertex_count":len(vertices) if isinstance(vertices,list) else 0,
+                "uv_count":len(uv) if isinstance(uv,list) else 0,
+                "skin_weight_entry_count":len(skin_data),
+                "bind_pose_count":len(bindposes),
+                "weights_per_vertex":{str(k):v for k,v in sorted(weights_per_vertex.items())},
+                "positive_bone_index_count":len(positive_influences),
+                "renderer_instances":renderers_by_mesh.get(mesh_id,[]),
+                "weight_sum_min":min(weight_sums) if weight_sums else None,
+                "weight_sum_max":max(weight_sums) if weight_sums else None,
+                "sample_first_three":sample,
+                "conversion_candidate":bool(skin_data and bindposes and renderers_by_mesh.get(mesh_id)),
+            })
+    report={
+        "tool":"CounterFlame Unity Skin Weight Audit",
+        "schema_version":1,
+        "asset_path":asset_path,
+        "target_mesh_count":len(rows),
+        "meshes":rows,
+        "limitations":[
+            "This report audits serialized skin weights, bind poses, and renderer bone references; it does not export a rigged model.",
+            "A successful candidate flag means the source contains the main structural data needed for a later conversion attempt, not that the conversion is already correct.",
+            "No IPA contents are modified."
+        ]
+    }
+    (out/"unity_skin_weight_audit.json").write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
+    md=["# Unity skin-weight and bind-pose audit","",f"Target mesh records: {len(rows)}","",
+        "| Skin | Mesh | Vertices | Weight entries | Bind poses | Renderer bone counts | Candidate |",
+        "|---|---|---:|---:|---:|---|---|"]
+    for r in rows:
+        if r.get("error"):
+            md.append(f"| {r['skin_key']} | path {r['mesh_path_id']} | — | — | — | — | read error |")
+            continue
+        counts=", ".join(str(x["bone_count"]) for x in r["renderer_instances"]) or "none"
+        md.append(f"| {r['skin_key']} | {r['mesh_name']} | {r['vertex_count']} | {r['skin_weight_entry_count']} | {r['bind_pose_count']} | {counts} | {'yes' if r['conversion_candidate'] else 'no'} |")
+    md += ["","## Interpretation","",
+        "The candidate column checks for skin-weight entries, bind poses, and at least one serialized SkinnedMeshRenderer reference. It does not guarantee correct joint ordering, transforms, coordinate conversion, or GLB validation.",
+        "The original IPA is read-only."]
+    (out/"unity_skin_weight_audit.md").write_text("\n".join(md)+"\n",encoding="utf-8")
+    print(f"[OK] Skin-weight audit: {len(rows)} target mesh records")
+    print(f"[REPORT] {out/'unity_skin_weight_audit.md'}")
+    return 0
+
+if __name__=="__main__":
+    raise SystemExit(main())
