@@ -1,0 +1,31 @@
+name: Validate Local Skin Mapping
+
+on:
+  push:
+    paths:
+      - "config/local_skin_pseudo_entity_map.json"
+      - "src/validate_local_skin_mapping.py"
+      - "tests/test_local_skin_mapping.py"
+      - ".github/workflows/validate-local-skin-mapping.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate six local skin mappings
+        run: python src/validate_local_skin_mapping.py
+      - name: Run tests
+        run: python -m unittest tests/test_local_skin_mapping.py -v
+      - name: Upload validation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-skin-mapping-validation
+          path: reports/local_skin_mapping_validation.json
