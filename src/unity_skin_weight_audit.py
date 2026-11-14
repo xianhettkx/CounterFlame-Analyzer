@@ -99,11 +99,31 @@ def main():
                 if any(weights): weight_sums.append(sum(weights))
                 if index<3: sample.append({"bone_indices":bone_indices,"weights":weights})
             name=str(get_value(mesh,"m_Name","") or obj.peek_name() or "")
+            compressed=get_value(mesh,"m_CompressedMesh")
+            packed_weights=get_value(compressed,"m_Weights")
+            packed_indices=get_value(compressed,"m_BoneIndices")
+            vertex_data=get_value(mesh,"m_VertexData")
+            channels=get_value(vertex_data,"m_Channels",[]) or []
+            channel_layout=[]
+            for channel_index,channel in enumerate(channels):
+                channel_layout.append({
+                    "index":channel_index,
+                    "dimension":int(get_value(channel,"dimension",0) or 0),
+                    "format":int(get_value(channel,"format",0) or 0),
+                    "stream":int(get_value(channel,"stream",0) or 0),
+                    "offset":int(get_value(channel,"offset",0) or 0),
+                })
+            variable_weights=get_value(mesh,"m_VariableBoneCountWeights")
+            variable_weight_data=get_value(variable_weights,"m_Data",[]) or []
             rows.append({
                 "skin_key":skin,"mesh_name":name,"mesh_path_id":mesh_id,
                 "vertex_count":len(vertices) if vertices is not None else 0,
                 "uv_count":len(uv) if uv is not None else 0,
                 "skin_weight_entry_count":len(skin_data),
+                "compressed_weight_item_count":int(get_value(packed_weights,"m_NumItems",0) or 0),
+                "compressed_bone_index_item_count":int(get_value(packed_indices,"m_NumItems",0) or 0),
+                "variable_bone_weight_data_count":len(variable_weight_data),
+                "vertex_channel_layout":channel_layout,
                 "bind_pose_count":len(bindposes),
                 "weights_per_vertex":{str(k):v for k,v in sorted(weights_per_vertex.items())},
                 "positive_bone_index_count":len(positive_influences),
