@@ -1,4 +1,6 @@
+import tempfile
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 
 from src.unity_mesh_swap_plan import (
@@ -7,7 +9,13 @@ from src.unity_mesh_swap_plan import (
     record_readiness,
     PRESERVED_REFERENCES,
 )
+from src import unity_mesh_swap_prototype as proto
 from src.unity_mesh_swap_prototype import (
+    ReferenceDriftError,
+    apply_reference_swap,
+    assert_no_reference_drift,
+    atomic_write_bytes,
+    decide_apply,
     snapshot_renderer_references,
     snapshot_animator_controller,
 )
@@ -187,6 +195,206 @@ class ReferenceSnapshotTests(unittest.TestCase):
         objs = {10: Obj("GameObject", go), 20: Obj("Animator", anim)}
         controller = snapshot_animator_controller(objs, 10)
         self.assertEqual(controller, {"file_id": 0, "path_id": 30})
+
+
+def _ptr(pid):
+    return SimpleNamespace(m_FileID=0, m_PathID=pid)
+
+
+class _FileData:
+    """Stand-in for a UnityPy renderer object read in memory."""
+
+    def __init__(self, go, bones, root, mats, mesh):
+        self.m_GameObject = go
+        self.m_Bones = bones
+        self.m_RootBone = root
+        self.m_Materials = mats
+        self.m_Mesh = mesh
+        self.saved = False
+
+    def save(self):
+        self.saved = True
+
+
+class _Obj:
+    def __init__(self, type_name, data=None, path_id=0):
+        self.type = SimpleNamespace(name=type_name)
+        self._data = data
+        self.path_id = path_id
+
+    def read(self):
+        return self._data
+
+
+class _Env:
+    def __init__(self, payload=b"serialized-payload"):
+        self.file = SimpleNamespace(save=lambda: payload)
+
+
+def _build_world(renderer_pid, mesh_pid, data):
+    go_pid, mat_pid = 100, 200
+    objs = {
+        go_pid: _Obj("GameObject", SimpleNamespace(m_Component=[]), go_pid),
+        mat_pid: _Obj("Material", SimpleNamespace(m_Name="mat"), mat_pid),
+        renderer_pid: _Obj("MeshFilter", data, renderer_pid),
+        mesh_pid: _Obj("Mesh", None, mesh_pid),
+    }
+    return objs, go_pid, mat_pid
+
+
+class ApplyGateTests(unittest.TestCase):
+    def test_decide_apply_eligible_static_pair(self):
+        decision = decide_apply(static_filter(400), static_filter(999))
+        self.assertTrue(decision["eligible"])
+        self.assertEqual(decision["plan_status"], "reference_swap_eligible")
+        self.assertEqual(decision["source_readiness"], "eligible_for_reference_review")
+        self.assertEqual(decision["target_readiness"], "eligible_for_reference_review")
+
+    def test_decide_apply_skinned_pair_not_promoted_to_eligible(self):
+        decision = decide_apply(glove(2217, 67, 67), glove(2000, 67, 67))
+        self.assertFalse(decision["eligible"])
+        self.assertEqual(decision["plan_status"], "needs_runtime_verification")
+
+    def test_decide_apply_blocked_source_collects_reasons(self):
+        decision = decide_apply(knife(2233, weights=0), glove(2217, 67, 67))
+        self.assertFalse(decision["eligible"])
+        self.assertTrue(decision["reasons"])
+        self.assertTrue(any("skin weight" in r for r in decision["reasons"]))
+
+    def test_blocked_source_does_not_write_asset(self):
+        tmp = Path(tempfile.mkdtemp())
+        out = tmp / "resources.assets"
+        data = _FileData(_ptr(100), [_ptr(1)], _ptr(2), [_ptr(200)], _ptr(999))
+        objs, _, _ = _build_world(300, 400, data)
+        fragment = apply_reference_swap(
+            _Env(), objs, 300, 400, out,
+            source_record=knife(2233, weights=0),
+            target_record=glove(2217, 67, 67),
+        )
+        self.assertFalse(fragment["applied"])
+        self.assertFalse(out.exists())
+        self.assertEqual(fragment["applied_plan"]["status"], "blocked")
+        self.assertTrue(fragment["skipped"][0]["reasons"])
+        self.assertFalse(data.saved)
+
+    def test_needs_runtime_verification_does_not_write_asset(self):
+        tmp = Path(tempfile.mkdtemp())
+        out = tmp / "resources.assets"
+        data = _FileData(_ptr(100), [_ptr(1)], _ptr(2), [_ptr(200)], _ptr(999))
+        objs, _, _ = _build_world(300, 400, data)
+        fragment = apply_reference_swap(
+            _Env(), objs, 300, 400, out,
+            source_record=glove(2217, 67, 67),
+            target_record=glove(2000, 67, 67),
+        )
+        self.assertFalse(fragment["applied"])
+        self.assertFalse(out.exists())
+        self.assertEqual(fragment["applied_plan"]["status"], "needs_runtime_verification")
+        self.assertFalse(data.saved)
+
+    def test_reference_drift_aborts_before_write(self):
+        tmp = Path(tempfile.mkdtemp())
+        out = tmp / "resources.assets"
+        data = _FileData(_ptr(100), [], None, [_ptr(200)], _ptr(999))
+        objs, _, _ = _build_world(300, 400, data)
+
+        def _boom(*_a, **_k):
+            raise ReferenceDriftError("bones drifted")
+
+        original = proto.perform_reference_swap
+        proto.perform_reference_swap = _boom
+        try:
+            with self.assertRaises(ReferenceDriftError):
+                apply_reference_swap(
+                    _Env(), objs, 300, 400, out,
+                    source_record=static_filter(400),
+                    target_record=static_filter(999),
+                )
+        finally:
+            proto.perform_reference_swap = original
+        self.assertFalse(out.exists())
+        self.assertFalse(data.saved)
+
+    def test_eligible_pair_writes_asset_atomically(self):
+        tmp = Path(tempfile.mkdtemp())
+        out = tmp / "resources.assets"
+        data = _FileData(_ptr(100), [], None, [_ptr(200)], _ptr(999))
+        objs, _, _ = _build_world(300, 400, data)
+        fragment = apply_reference_swap(
+            _Env(b"bin-payload"), objs, 300, 400, out,
+            source_record=static_filter(400),
+            target_record=static_filter(999),
+        )
+        self.assertTrue(fragment["applied"])
+        self.assertTrue(out.exists())
+        self.assertEqual(out.read_bytes(), b"bin-payload")
+        # m_Mesh PPtr is repointed; no leftover temp file remains.
+        self.assertEqual(data.m_Mesh.m_PathID, 400)
+        self.assertTrue(data.saved)
+        self.assertEqual([p.name for p in tmp.iterdir()], ["resources.assets"])
+
+    def test_mesh_is_the_only_changed_reference(self):
+        tmp = Path(tempfile.mkdtemp())
+        out = tmp / "resources.assets"
+        data = _FileData(_ptr(100), [_ptr(1), _ptr(2)], _ptr(3), [_ptr(4)], _ptr(999))
+        objs, _, _ = _build_world(300, 400, data)
+        fragment = apply_reference_swap(
+            _Env(), objs, 300, 400, out,
+            source_record=static_filter(400),
+            target_record=static_filter(999),
+        )
+        self.assertEqual(fragment["preserved_before"], fragment["preserved_after"])
+        for field in ("m_GameObject", "m_Bones", "m_RootBone", "m_Materials"):
+            self.assertEqual(
+                fragment["preserved_before"][field], fragment["preserved_after"][field]
+            )
+        # The renderer's current mesh PPtr is the only reference that moved.
+        self.assertNotEqual(data.m_Mesh.m_PathID, 999)
+
+
+class ReferenceGuardTests(unittest.TestCase):
+    def test_identical_snapshots_pass(self):
+        snap = {
+            "m_GameObject": {"file_id": 0, "path_id": 10},
+            "m_Bones": [{"file_id": 0, "path_id": 1}],
+            "m_RootBone": {"file_id": 0, "path_id": 3},
+            "m_Materials": [{"file_id": 0, "path_id": 4}],
+        }
+        assert_no_reference_drift(snap, snap, {"path_id": 30}, {"path_id": 30})
+
+    def test_bone_mutation_is_detected(self):
+        before = {
+            "m_GameObject": {"file_id": 0, "path_id": 10},
+            "m_Bones": [{"file_id": 0, "path_id": 1}],
+            "m_RootBone": None,
+            "m_Materials": [],
+        }
+        after = dict(before)
+        after["m_Bones"] = [{"file_id": 0, "path_id": 99}]
+        with self.assertRaises(ReferenceDriftError):
+            assert_no_reference_drift(before, after, None, None)
+
+    def test_material_mutation_is_detected(self):
+        before = {"m_GameObject": None, "m_Bones": [], "m_RootBone": None,
+                  "m_Materials": [{"path_id": 4}]}
+        after = dict(before)
+        after["m_Materials"] = [{"path_id": 77}]
+        with self.assertRaises(ReferenceDriftError):
+            assert_no_reference_drift(before, after, None, None)
+
+    def test_animator_controller_mutation_is_detected(self):
+        snap = {"m_GameObject": None, "m_Bones": [], "m_RootBone": None, "m_Materials": []}
+        with self.assertRaises(ReferenceDriftError):
+            assert_no_reference_drift(snap, snap, {"path_id": 30}, {"path_id": 31})
+
+    def test_atomic_write_replaces_without_temp_left(self):
+        tmp = Path(tempfile.mkdtemp())
+        target = tmp / "a.bin"
+        atomic_write_bytes(target, b"one")
+        self.assertEqual(target.read_bytes(), b"one")
+        atomic_write_bytes(target, b"two")
+        self.assertEqual(target.read_bytes(), b"two")
+        self.assertEqual([p.name for p in tmp.iterdir()], ["a.bin"])
 
 
 if __name__ == "__main__":
