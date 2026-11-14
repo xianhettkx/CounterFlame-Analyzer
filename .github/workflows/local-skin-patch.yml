@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/local-skin-patch.yml'
+      - 'src/unity_local_skin_patch.py'
   workflow_dispatch:
 
 permissions:
