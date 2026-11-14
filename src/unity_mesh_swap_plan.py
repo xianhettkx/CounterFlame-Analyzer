@@ -89,6 +89,22 @@ def _check(plan: SwapPlan, check: str, passed: bool, detail: str) -> None:
     plan.checks.append(CheckResult(check=check, passed=passed, detail=detail))
 
 
+def mesh_role(mesh_name: str) -> str:
+    """Conservative role classifier; never equate body, magazine, drop, or view models."""
+    name = (mesh_name or "").strip().lower()
+    if "mag" in name:
+        return "magazine"
+    if "drop" in name:
+        return "dropped_weapon"
+    if name.startswith("tps_"):
+        return "third_person_weapon"
+    if name.startswith("w_"):
+        return "world_weapon"
+    if name.startswith("v_"):
+        return "first_person_weapon"
+    return f"unclassified:{name}"
+
+
 def evaluate_swap(source: MeshModelRecord, target: MeshModelRecord) -> SwapPlan:
     """Compare a candidate source Mesh against the renderer it would replace.
 
@@ -109,6 +125,15 @@ def evaluate_swap(source: MeshModelRecord, target: MeshModelRecord) -> SwapPlan:
         "renderer_side_match",
         not source.side or not target.side or source.side == target.side,
         f"source side={source.side or 'unknown'} target side={target.side or 'unknown'}",
+    )
+
+    source_role = mesh_role(source.mesh_name)
+    target_role = mesh_role(target.mesh_name)
+    _check(
+        plan,
+        "mesh_role_match",
+        source_role == target_role,
+        f"source role={source_role} target role={target_role}",
     )
 
     _check(
