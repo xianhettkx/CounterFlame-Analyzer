@@ -75,3 +75,16 @@ A byte-level comparison of the two extracted 66,368-byte arm64 main executables 
 - The added 80-byte load command is `LC_LOAD_DYLIB @executable_path/Frameworks/CounterFlameKAlert551.dylib`.
 
 This narrows the observed main-executable change to a single added dylib load command plus the associated Mach-O header/load-command-table metadata and string storage. It does **not** establish that the dylib is safe, that its code only handles cosmetics, or that the modified app will pass iOS signing/runtime checks.
+
+## Existing local-skin pipeline review (2026-11-14)
+
+Repository source review found an existing texture-only local patch pipeline:
+
+- `src/unity_local_skin_patch.py` defaults to audit-only and, with `--apply`, replaces selected Texture2D payload bytes in the stock `resources.assets` only when width, height, texture format, and payload byte length all match.
+- `src/package_local_skin_patch.py` repacks the IPA while replacing `resources.assets` and optional localized files. Its own output note correctly warns that asset edits invalidate the IPA signature and require re-signing.
+- `.github/workflows/local-skin-patch.yml` downloads and verifies the stock IPA, applies texture overrides, scans/applies Simplified Chinese UI text, repacks an IPA, and uploads it as an artifact.
+- `config/local_skin_pseudo_entity_map.json` explicitly sets `mode=offline_mapping_manifest`, `status=asset_mapping_confirmed_runtime_activation_unverified`, and all safety flags to false for server inventory, entitlements, network/anti-cheat, and runtime injection.
+- The current `TEXTURE_OVERRIDES` table has an empty `specialist_pillow` entry. Thus the present texture patch code does not yet apply the Pillow Punchers glove textures. The Butterfly Knife entry only targets the third-person diffuse material in that table; first-person material/renderer activation is not implemented by this script.
+- The mapping manifest documents six skin asset relationships, but explicitly lists runtime activation requirements as unresolved.
+
+**Current deliverable boundary:** the repository has a local asset texture patch + Chinese text repack pipeline, not a functioning fake-inventory system. It does not add virtual inventory entries, equip-state UI, or runtime renderer selection. The output IPA is not ready to install until it is re-signed using a valid user-controlled signing workflow and tested on-device. No successful on-device visual validation is recorded.
