@@ -230,6 +230,13 @@ class MeshSwapPlanTests(unittest.TestCase):
         self.assertEqual(status, "blocked")
         self.assertTrue(any("material slot" in r for r in reasons))
 
+    def test_mesh_shared_by_multiple_renderer_owners_is_blocked(self):
+        shared = glove(2217, 67, 67)
+        shared.renderer_owner_count = 2
+        status, reasons = record_readiness(shared)
+        self.assertEqual(status, "blocked")
+        self.assertTrue(any("renderer owners" in r for r in reasons))
+
 
 class ReferenceSnapshotTests(unittest.TestCase):
     @staticmethod
