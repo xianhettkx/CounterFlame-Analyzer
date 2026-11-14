@@ -123,6 +123,24 @@ def export(ipa:Path, reports:Path, out:Path):
     bone_ids=[int(val(p,"m_PathID",0) or 0) for p in bone_ptrs]
     if len(bone_ids)!=len(bindposes) or any(pid not in objects for pid in bone_ids):
         raise RuntimeError("renderer bone array and bind-pose array do not align")
+    renderer_go_ptr=val(renderer_data,"m_GameObject")
+    renderer_go_id=int(val(renderer_go_ptr,"m_PathID",0) or 0)
+    renderer_transform_id=0
+    renderer_go_obj=objects.get(renderer_go_id)
+    if renderer_go_obj is not None:
+        try:
+            go_data=renderer_go_obj.read()
+            for component_pair in (val(go_data,"m_Component",[]) or []):
+                component_ptr=val(component_pair,"component")
+                component_id=int(val(component_ptr,"m_PathID",0) or 0)
+                component_obj=objects.get(component_id)
+                if component_obj is not None and getattr(getattr(component_obj,"type",None),"name","")=="Transform":
+                    renderer_transform_id=component_id
+                    break
+        except Exception:
+            pass
+    if not renderer_transform_id:
+        raise RuntimeError("renderer GameObject Transform component could not be resolved")
     max_joint=max((int(i) for row,wrow in zip(indices,weights) for i,w in zip(row,wrow) if float(w)>0),default=0)
     if max_joint>=len(bone_ids): raise RuntimeError(f"bone index {max_joint} exceeds renderer bone count {len(bone_ids)}")
     if not normals or len(normals)!=len(vertices): raise RuntimeError("mesh normals missing or count mismatch")
@@ -137,7 +155,7 @@ def export(ipa:Path, reports:Path, out:Path):
     # Build all required transform ancestors, preserving renderer.m_Bones order.
     transform_data={}
     parent_map={}
-    pending=list(bone_ids)
+    pending=list(bone_ids)+[renderer_transform_id]
     while pending:
         pid=pending.pop()
         if pid in transform_data: continue
@@ -183,7 +201,7 @@ def export(ipa:Path, reports:Path, out:Path):
         raise RuntimeError("renderer root bone is not part of the resolved hierarchy")
     mesh_node_index=len(node_list)
     node_list.append({"name":"specialist_pillow_skinned_mesh","mesh":0,"skin":0})
-    node_list[0]["children"].append(mesh_node_index)
+    node_list[node_index[renderer_transform_id]]["children"].append(mesh_node_index)
     builder=GLBBuilder()
     positions=[float(c) for v in vertices for c in v]
     pos_min=[min(float(v[i]) for v in vertices) for i in range(3)]
@@ -280,6 +298,8 @@ def export(ipa:Path, reports:Path, out:Path):
         "mesh_name":str(val(mesh,"m_Name","") or ""),
         "mesh_path_id":MESH_ID,
         "renderer_path_id":int(renderer_obj.path_id),
+        "renderer_gameobject_path_id":renderer_go_id,
+        "renderer_transform_path_id":renderer_transform_id,
         "renderer_bone_count":len(bone_ids),
         "bind_pose_count":len(bindposes),
         "vertex_count":len(vertices),
