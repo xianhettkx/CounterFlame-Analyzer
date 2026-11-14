@@ -15,31 +15,37 @@ SKINS = {
         "label": "Butterfly Knife | Marble Fade",
         "base_materials": ["knife_flip", "butterfly_vanilla_tps_Diffuse"],
         "skin_materials": ["butterfly_marblefade_PBR", "butterfly_marblefade_Diffuse", "butterfly_marblefade_Specular"],
+        "material_roles": {"knife_flip":"PBR","butterfly_vanilla_tps_Diffuse":"Diffuse"},
     },
     "specialist_pillow": {
         "label": "Specialist Gloves | Pillow Punchers",
         "base_materials": ["glove_specialist_left", "glove_specialist_right"],
         "skin_materials": ["specialist_pillow_PBR", "specialist_pillow_Diffuse", "specialist_pillow_Specular"],
+        "material_roles": {"glove_specialist_left":"PBR","glove_specialist_right":"PBR"},
     },
     "awp_dragonlore": {
         "label": "AWP | Dragon Lore",
         "base_materials": ["awp", "awpScope", "awp_pbr"],
         "skin_materials": ["awp_dragonlore_PBR", "awp_dragonlore_Diffuse", "awp_dragonlore_Specular"],
+        "material_roles": {"awp":"PBR","awp_pbr":"PBR"},
     },
     "ak47_neonrevolution": {
         "label": "AK-47 | Neon Revolution",
         "base_materials": ["ak47_default_PBR", "ak47_default_tps_Diffuse"],
         "skin_materials": ["ak47_neonrevolution_PBR", "ak47_neonrevolution_Diffuse", "ak47_neonrevolution_Specular"],
+        "material_roles": {"ak47_default_PBR":"PBR","ak47_default_tps_Diffuse":"Diffuse"},
     },
     "m4a4_emperor": {
         "label": "M4A4 | The Emperor",
         "base_materials": ["m4a4", "m4a4_Diffuse", "agent_m4a4_Diffuse"],
         "skin_materials": ["m4a4_emperor_PBR", "m4a4_emperor_Diffuse", "m4a4_emperor_Specular"],
+        "material_roles": {"m4a4":"PBR","m4a4_Diffuse":"Diffuse","agent_m4a4_Diffuse":"Diffuse"},
     },
     "deagle_codered": {
         "label": "Desert Eagle | Code Red",
         "base_materials": ["pist_deagle", "pist_deagle_Diffuse"],
         "skin_materials": ["deagle_codered_PBR", "deagle_codered_Diffuse", "deagle_codered_Specular"],
+        "material_roles": {"pist_deagle":"PBR","pist_deagle_Diffuse":"Diffuse"},
     },
 }
 
@@ -151,8 +157,11 @@ def main():
                         base_tex_obj=resolve_texture(base_ptr)
                         base_tex_data=object_data(base_tex_obj) if base_tex_obj else None
                         base_tex_name=name_of(base_tex_data) if base_tex_data else ""
+                        role=spec.get("material_roles",{}).get(base_name)
+                        preferred_source=f"{skin_key}_{role}" if role else ""
                         source_candidates=[]
                         for source_name,source_data,source_bundle in source_mats:
+                            if preferred_source and source_name!=preferred_source: continue
                             for source_slot,source_env_data in texenv_pairs(source_data):
                                 if source_slot!=slot: continue
                                 source_ptr=get_field(source_env_data,"m_Texture")
@@ -185,7 +194,12 @@ def main():
                             unique={(x["source_material"],x["source_texture"],x["source_bundle"]) for x in source_candidates}
                             if len(unique)==1:
                                 chosen=source_candidates[0]
-                                base_tex_data.set_image(chosen["_image"],in_cab=False)
+                                image=chosen["_image"]
+                                target_size=(int(get_field(base_tex_data,"m_Width",0) or image.width),int(get_field(base_tex_data,"m_Height",0) or image.height))
+                                if image.size!=target_size:
+                                    from PIL import Image
+                                    image=image.resize(target_size,Image.Resampling.LANCZOS)
+                                base_tex_data.set_image(image,in_cab=False)
                                 base_tex_obj.save()
                                 replacements.append({
                                     "skin_key":skin_key,"base_material":base_name,"slot":slot,
