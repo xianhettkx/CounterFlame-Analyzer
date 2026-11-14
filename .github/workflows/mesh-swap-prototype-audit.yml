@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "src/ipa_package_diff.py"
       - "src/unity_mesh_swap_prototype.py"
       - "src/unity_mesh_plan.py"
       - "src/unity_mesh_swap_plan.py"
@@ -62,6 +63,10 @@ jobs:
               if actual != item["sha256"]:
                   raise SystemExit(f"{name} IPA SHA256 mismatch")
           PY
+      - name: Compare complete IPA package contents
+        run: |
+          mkdir -p reports/package_diff
+          python src/ipa_package_diff.py original.ipa provided_candidate.ipa --out reports/package_diff/ipa_package_diff.json | tee reports/package_diff/summary.log
       - name: Audit original IPA
         run: |
           mkdir -p reports/original
