@@ -50,6 +50,9 @@ jobs:
       - name: Map renderer owners and material slots
         run: |
           python src/unity_mesh_renderer_link_audit.py input.ipa --out reports/mesh_swap_prototype_run/renderer_links
+      - name: Map renderer owners, bone bindings, and ancestor Animators
+        run: |
+          python src/unity_renderer_owner_context_audit.py input.ipa --out reports/mesh_swap_prototype_run/renderer_owner_context
       - name: Upload mesh swap audit evidence
         uses: actions/upload-artifact@v4
         with:
