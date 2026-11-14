@@ -86,12 +86,18 @@ def process_entry(raw: bytes, label: str):
                 if isinstance(src, bytes):
                     try: text = src.decode("utf-8-sig")
                     except UnicodeDecodeError: continue
+                    encode_text = lambda value: value.encode("utf-8")
+                elif isinstance(src, str):
+                    text = src
+                    encode_text = lambda value: value
+                else:
+                    continue
                     # Parse structured localization tables and translate values only.
                     try:
                         parsed = json.loads(text)
                         new_obj = translate_value(parsed, stats, allow_all=True)
                         if new_obj != parsed:
-                            data.m_Script = json.dumps(new_obj, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+                            data.m_Script = encode_text(json.dumps(new_obj, ensure_ascii=False, separators=(",", ":")))
                             obj.save()
                             changed = True
                     except (ValueError, TypeError):
@@ -109,7 +115,7 @@ def process_entry(raw: bytes, label: str):
                                 new_lines.append(line)
                         new_text = "".join(new_lines)
                         if new_text != text:
-                            data.m_Script = new_text.encode("utf-8")
+                            data.m_Script = encode_text(new_text)
                             obj.save()
                             changed = True
             elif obj.type.name == "MonoBehaviour":
