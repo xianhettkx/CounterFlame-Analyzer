@@ -41,15 +41,53 @@ ZH = {
     "Are you sure you want to quit?":"确定要退出吗？"
 }
 
+
+# Verified Unity MonoBehaviour _displayName values found in sticker bundles.
+# These are catalog display labels, not unlock or entitlement data.
+COSMETIC_ZH = {
+    "Aceberry":"莓好时光","Agent Kucumber":"黄瓜特工","Apple A Day":"每天一苹果",
+    "B'nana Strike":"香蕉突击","Bananart":"香蕉艺术","Big Clucks":"大鸡大利",
+    "Blinky":"眨眼","Bolt Charge":"闪电充能","Bolt Energy":"闪电能量","Bolt Strike":"闪电突击",
+    "Bonehead":"笨骨头","Boom Blast":"轰然爆破","Boom Detonation":"爆炸引爆","Boom Epicenter":"爆炸中心",
+    "Boom Trail":"爆破轨迹","Box Logo":"方框标志","BukAWP":"BukAWP","Bum A Smoke":"来颗烟雾弹",
+    "Cedar Creek":"雪松溪","Chompers":"大嘴咬咬","Clown Nose":"小丑鼻子","Clown Wig":"小丑假发",
+    "Cry Baby":"爱哭鬼","Double Dip":"双重蘸料","Dragon Fruit":"火龙果","Dystopian Gaze":"反乌托邦凝视",
+    "Early Bird":"早起的鸟儿","Easy For Ricksaw":"轻松拿捏","Econometer":"经济计量器",
+    "Factory Sealed":"原厂封装","Flex":"秀一把","Fly High":"展翅高飞","Fowl Play":"鸡飞蛋打",
+    "Fresh Cut":"清爽剪裁","From The Deep":"来自深海","From The Source":"源头而来",
+    "From The Vine":"藤蔓之上","Fruit Fly":"果蝇","Glare":"怒目而视","Gold Teef":"黄金牙",
+    "Googly Eye":"滑稽眼球","Heads Up":"抬头注意","Heckler":"起哄者","High Heat":"高温烈焰",
+    "Hot Pepper":"辣椒","Hot Rod Heat":"烈焰飞车","Hot Wings":"火辣鸡翅","Hydro Geyser":"水力喷泉",
+    "Hydro Stream":"水流","Hydro Wave":"水浪","Hypnoteyes":"催眠双眼","Juice Box":"果汁盒",
+    "Kawaii Eyes":"萌萌大眼","Knife Streak":"刀锋轨迹","Lefty (CT)":"反恐精英左手",
+    "Lemin":"柠檬","Lit":"燃起来了","Lost In Smoke":"迷失烟雾","Lotus":"莲花",
+    "Loving Eyes":"爱意眼神","Mustachio":"小胡子","Nest Egg":"备用金","Old School":"复古风格",
+    "On An Eco":"经济局专用","Ouchie":"哎哟","Peek-A-Boo":"躲猫猫","Peekle":"皮克尔",
+    "Pepper Gauge":"辣度计","Pineapple On Pizza":"披萨上的菠萝","Please Return To":"请归还至",
+    "Pungent Comms":"刺鼻通讯","Pushing Smokes":"推进烟雾","Quality Control":"质量管控",
+    "Quick Peek":"快速探头","Rainbow Route":"彩虹路线","Red Shades":"红色墨镜","Retro Zeus":"复古宙斯",
+    "Ribbon Tie":"丝带领结","Roosty Boosty":"公鸡助推","Ruby Stream":"红宝石溪流",
+    "Ruby Wave":"红宝石浪潮","Say Cheese":"笑一个","Scorch Loop":"灼烧循环",
+    "Scorch Loop (Reverse)":"反向灼烧循环","Scratch N' Whiff":"刮擦与挥空","Side Eyes":"斜眼一瞥",
+    "Strike A Pose":"摆个姿势","Taste Bud":"味蕾","Taste Buddy":"味觉伙伴",
+    "This Is Fine (Chicken)":"小鸡：一切安好","Try Hard":"全力以赴","Ultra Fruity":"超浓果香",
+    "What What":"什么情况","Winding Scorch":"蜿蜒灼痕","XD":"XD"
+}
+
 TEXT_KEYS=("text","label","title","desc","message","content","placeholder","tooltip","caption","button","localiz","string")
 def translate_tree(value: Any, stats: dict, key: str=""):
     if isinstance(value,str):
         # Unity typetrees use generated field names, so match exact reviewed
         # labels regardless of field name. Never translate partial substrings.
-        t=ZH.get(value.strip())
-        if t is not None and value==value.strip():
+        t=ZH.get(value.strip()) if value==value.strip() else None
+        if t is not None:
             stats[value]=stats.get(value,0)+1
             return t
+        # Only translate verified catalog display-name fields; do not alter
+        # internal identifiers, skin keys, or other runtime string fields.
+        if key == "_displayName" and value in COSMETIC_ZH:
+            stats[value]=stats.get(value,0)+1
+            return COSMETIC_ZH[value]
         return value
     if isinstance(value,list):
         return [translate_tree(v,stats,key) for v in value]
