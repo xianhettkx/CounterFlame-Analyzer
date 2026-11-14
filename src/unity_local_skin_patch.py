@@ -10,6 +10,28 @@ import argparse, json, tempfile, zipfile
 from pathlib import Path
 from typing import Any
 
+TEXTURE_OVERRIDES = {
+    "butterfly_marblefade": {"butterfly_vanilla_tps_Diffuse": {"_MainTex":"butterfly_marblefade_paint"}},
+    "specialist_pillow": {},
+    "awp_dragonlore": {
+        "awp": {"_MainTex":"awp_dragonlore_cs2_low"},
+        "awp_pbr": {"_MainTex":"awp_dragonlore_cs2","_SpecGlossMap":"awp_awp_dragonlore__cs2_mask"},
+    },
+    "ak47_neonrevolution": {
+        "ak47_default_PBR": {"_MainTex":"ak47_neonrevolution_cs2","_SpecGlossMap":"ak47_ak47_neonrevolution__cs2_mask"},
+        "ak47_default_tps_Diffuse": {"_MainTex":"ak47_neonrevolution_cs2_low"},
+    },
+    "m4a4_emperor": {
+        "m4a4": {"_MainTex":"m4a4_emperor_cs2","_SpecGlossMap":"m4a1_m4a4_emperor__cs2_mask"},
+        "m4a4_Diffuse": {"_MainTex":"m4a4_emperor_cs2_low"},
+        "agent_m4a4_Diffuse": {"_MainTex":"m4a4_emperor_cs2_low"},
+    },
+    "deagle_codered": {
+        "pist_deagle": {"_MainTex":"deagle_codered_cs2","_BumpMap":"deagle_codered_cs2_normal","_SpecGlossMap":"deserteagle_deagle_codered__cs2_mask"},
+        "pist_deagle_Diffuse": {"_MainTex":"deagle_codered_cs2_low"},
+    },
+}
+
 SKINS = {
     "butterfly_marblefade": {
         "label": "Butterfly Knife | Marble Fade",
@@ -133,16 +155,31 @@ def main():
                 if nm: base_materials.setdefault(nm,[]).append((obj,data))
         # Scan only the catalog bundles belonging to the six requested skins.
         skin_materials={k:[] for k in SKINS}
+        source_textures={}
         for bundle_path,raw in selected:
             skin_key=next((k for k in SKINS if k in raw.lower()),None)
             if not skin_key: continue
             try:
                 env=UnityPy.load(zf.read(bundle_path))
                 for obj in env.objects:
-                    if obj.type.name!="Material": continue
-                    data=object_data(obj)
-                    if data is not None and name_of(data) in SKINS[skin_key]["skin_materials"]:
-                        skin_materials[skin_key].append((name_of(data),data,bundle_path))
+                    if obj.type.name=="Texture2D":
+                        texture_data=object_data(obj)
+                        if texture_data is not None:
+                            texture_name=name_of(texture_data)
+                            if texture_name and texture_name not in source_textures:
+                                try:
+                                    source_textures[texture_name]={
+                                        "image":texture_data.image.copy(),
+                                        "width":int(texture_data.m_Width),
+                                        "height":int(texture_data.m_Height),
+                                        "bundle":bundle_path,
+                                    }
+                                except Exception:
+                                    pass
+                    elif obj.type.name=="Material":
+                        data=object_data(obj)
+                        if data is not None and name_of(data) in SKINS[skin_key]["skin_materials"]:
+                            skin_materials[skin_key].append((name_of(data),data,bundle_path))
             except Exception as exc:
                 audit.setdefault("bundle_errors",[]).append({"path":bundle_path,"error":f"{type(exc).__name__}: {exc}"[:200]})
         replacements=[]
@@ -187,14 +224,15 @@ def main():
                             "base_texture_file_id":int(get_field(base_ptr,"m_FileID",0) or 0) if base_ptr else 0,
                             "base_dimensions":[int(get_field(base_tex_data,"m_Width",0) or 0),int(get_field(base_tex_data,"m_Height",0) or 0)] if base_tex_data else None,
                             "source_candidates":public_candidates,
+                            "planned_source_texture":TEXTURE_OVERRIDES.get(skin_key,{}).get(base_name,{}).get(slot),
+                            "planned_source_texture_found":bool(TEXTURE_OVERRIDES.get(skin_key,{}).get(base_name,{}).get(slot) in source_textures) if TEXTURE_OVERRIDES.get(skin_key,{}).get(base_name,{}).get(slot) else False,
                         }
                         skin_rows.append(row)
-                        if args.apply and base_tex_data is not None and source_candidates:
-                            # Only apply an unambiguous slot-to-slot material match.
-                            unique={(x["source_material"],x["source_texture"],x["source_bundle"]) for x in source_candidates}
-                            if len(unique)==1:
-                                chosen=source_candidates[0]
-                                image=chosen["_image"]
+                        if args.apply and base_tex_data is not None:
+                            replacement_name=TEXTURE_OVERRIDES.get(skin_key,{}).get(base_name,{}).get(slot)
+                            chosen=source_textures.get(replacement_name) if replacement_name else None
+                            if chosen is not None:
+                                image=chosen["image"]
                                 target_size=(int(get_field(base_tex_data,"m_Width",0) or image.width),int(get_field(base_tex_data,"m_Height",0) or image.height))
                                 if image.size!=target_size:
                                     from PIL import Image
@@ -203,8 +241,8 @@ def main():
                                 base_tex_obj.save()
                                 replacements.append({
                                     "skin_key":skin_key,"base_material":base_name,"slot":slot,
-                                    "base_texture":base_tex_name,"source_material":chosen["source_material"],
-                                    "source_texture":chosen["source_texture"],"source_bundle":chosen["source_bundle"],
+                                    "base_texture":base_tex_name,"source_texture":replacement_name,
+                                    "source_bundle":chosen["bundle"],
                                     "dimensions_before":row["base_dimensions"],
                                     "dimensions_after":[int(base_tex_data.m_Width),int(base_tex_data.m_Height)],
                                 })
@@ -228,8 +266,10 @@ def main():
             audit["replacements"]=replacements
             audit["patch_file"]="resources.assets"
             audit["patch_sha256"]=__import__("hashlib").sha256(output_asset.read_bytes()).hexdigest()
+        audit["source_texture_index"]={k:{"width":v["width"],"height":v["height"],"bundle":v["bundle"]} for k,v in sorted(source_textures.items())}
         audit["counts"]={
             "target_bundle_paths":len(selected),
+            "source_textures_found":len(source_textures),
             "base_material_objects":sum(len(v) for v in base_materials.values()),
             "skin_material_objects":sum(len(v) for v in skin_materials.values()),
             "texture_replacements":len(replacements),
