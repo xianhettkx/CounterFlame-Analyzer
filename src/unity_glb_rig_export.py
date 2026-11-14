@@ -49,7 +49,7 @@ class GLBBuilder:
         while len(binary)%4: binary+=b"\0"
         total=12+8+len(raw)+8+len(binary)
         with open(path,"wb") as f:
-            f.write(struct.pack("<4sII","glTF",2,total))
+            f.write(struct.pack("<4sII",b"glTF",2,total))
             f.write(struct.pack("<I4s",len(raw),b"JSON")); f.write(raw)
             f.write(struct.pack("<I4s",len(binary),b"BIN\0")); f.write(binary)
 
@@ -264,7 +264,7 @@ def export(ipa:Path, reports:Path, out:Path):
         "images":[{"name":image_name,"bufferView":image_view,"mimeType":"image/png"}],
         "textures":[{"sampler":0,"source":0}],
         "samplers":[{"magFilter":9729,"minFilter":9987,"wrapS":10497,"wrapT":10497}],
-        "sceneExtras":{"source_mesh_path_id":MESH_ID}
+        "extras":{"source_mesh_path_id":MESH_ID}
     }
     if not texture_used:
         doc.pop("images",None); doc.pop("textures",None); doc.pop("samplers",None)
