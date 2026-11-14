@@ -18,6 +18,10 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 
 
+# Only this plan status may enter the in-memory rewrite / serialization path.
+# ``needs_runtime_verification`` must never be auto-promoted to writable.
+APPLY_WRITABLE_PLAN_STATUS = "reference_swap_eligible"
+
 # Reference fields that a mesh swap must NOT rewrite. Kept here so the report
 # and the prototype can list the same invariant surface.
 PRESERVED_REFERENCES = (
@@ -188,6 +192,9 @@ def record_readiness(record: MeshModelRecord) -> tuple[str, list[str]]:
     if record.is_skinned and record.bind_pose_count == 0:
         reasons.append("skinned mesh has no bind poses")
 
+    if record.is_skinned and record.renderer_bone_count == 0:
+        reasons.append("skinned renderer has no bone Transform references")
+
     for note in record.notes:
         if note.startswith("MeshHandler"):
             reasons.append(f"geometry stream decode failed: {note}")
@@ -197,6 +204,16 @@ def record_readiness(record: MeshModelRecord) -> tuple[str, list[str]]:
     if record.is_skinned:
         return "needs_runtime_verification", []
     return "eligible_for_reference_review", []
+
+
+def readiness_allows_apply(status: str) -> bool:
+    """A single-record readiness status that may feed the apply gate.
+
+    ``blocked`` always fails. ``needs_runtime_verification`` and
+    ``eligible_for_reference_review`` are not blocked on static facts, but the
+    pair plan still has to reach ``reference_swap_eligible`` before any write.
+    """
+    return status != "blocked"
 
 
 def summarize_manifests(records: list[MeshModelRecord]) -> dict[str, Any]:
