@@ -34,3 +34,17 @@ The reference dylib is a third-party modification module and contains unrelated 
 ## Safe next engineering step
 
 Build a separate local-only cosmetic preview prototype using the stock game's existing model/material catalog and an isolated preview data source. Keep it read-only with respect to account/server inventory and clearly label virtual items as local preview. First validate one cosmetic in a standalone preview scene; expand to the catalog only after the rendering path and compatibility are verified. Do not patch the live client binary until there is a documented, authorized integration point and a reproducible test.
+
+## Mach-O linkage check (2026-11-14)
+
+A follow-up extraction run completed successfully:
+
+- GitHub Actions run: `43598690232` — success.
+- Evidence artifact: `reference-inventory-runtime-evidence`, artifact ID `14115396427`.
+- The reference app executable `CounterFlame` contains an `LC_LOAD_DYLIB` entry for `@executable_path/Frameworks/CounterFlameKAlert551.dylib`.
+- The referenced dylib is present at that exact bundle-relative path in the IPA.
+- The dylib's own `LC_ID_DYLIB` install-name string is `/Library/MobileSubstrate/DynamicLibraries/CounterFlameKAlert551.dylib`.
+
+**Interpretation:** the app executable explicitly declares a direct dynamic-library dependency on the bundled dylib. Therefore, the earlier assumption that the module must be loaded only by an external MobileSubstrate injector is not supported. The MobileSubstrate path is the dylib's install-name identity; it does not override the executable's `@executable_path/Frameworks` load command. This static result still does not prove successful runtime loading, signing validity, or execution on a non-jailbroken device.
+
+The linkage JSON is included in artifact `14115396427` as `macho-linkage-analysis.json`. The corrected parser was validated by a successful Actions run.
