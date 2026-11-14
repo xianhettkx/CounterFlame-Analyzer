@@ -202,6 +202,7 @@ GameObject
   3. 子网格数与材质槽位数对齐；
   4. 同皮肤/同武器家族内配对（跨家族不提案）。
 - 静态结论：手套 2000 ↔ 2217（均 67 骨、10,050 顶点、3 子网格）可进入“需运行时验证”状态；2215 ↔ 2115（均 99 骨）同理；50 骨变体 2216 与其他布局相互阻断；武器 FP 因解码权重为空，蒙皮配对被阻断。【已验证（静态）】
+- 写回放行条件：apply 路径仅把 `reference_swap_eligible`（同家族静态 MeshFilter 对）视为可写；蒙皮配对即使静态布局一致也只到 `needs_runtime_verification`，本轮一律跳过、不写资产。【已验证（代码 + 单测）】
 - 残余风险：骨骼顺序/绑定姿态正确性、形变、缩放比例、挂点朝向只能在实机或 Editor 内确认。【无法验证】
 
 #### 方案 B：在 `resources.assets` 内写入新 Mesh 字节（高风险，未验证）
@@ -255,9 +256,11 @@ GameObject
   - `src/unity_mesh_swap_prototype.py`：UnityPy 只读适配器 + 门控原型；默认审计模式，`--apply-reference-swap` 显式门控后才允许重定向 `m_Mesh`，且阻断任何未通过校验的配对。
   - `tests/test_mesh_swap_plan.py`：规划器不变量与引用快照测试。
   - `reports/mesh_model_audit.md`（本报告）、`reports/mesh_model_audit_evidence.json`（机器可读证据）。
-- 测试结果：`python3 -m unittest discover -s tests` → **21 个测试全部通过**（1 个原有清单测试、5 个原有扫描器测试、15 个新增模型规划与引用快照测试；原有 13 项测试全部保留）。【已验证，日志见交付物 `test_run.log`】
+- 测试结果：`python3 -m unittest discover -s tests` → **34 个测试全部通过**。其中原有 6 项（1 个清单测试、5 个扫描器测试）与 main 逐字节一致、零改动；新增 28 项覆盖规划门禁、引用快照、apply 写回路径与原子写入。【已验证，日志见交付物 `test_run.log`】
 - 真实 IPA 审计模式运行：15 条 Mesh 记录、20 条同皮肤配对计划；16 条配对阻断，4 条进入“需运行时验证”（2000↔2217、2215↔2115 及其反向）；单模型静态门禁跳过 10 条；未生成任何补丁 IPA。【已验证】
-- 引用安全：apply 路径在写回前对 `m_GameObject / m_Bones / m_RootBone / m_Materials` 以及同层 Animator `m_Controller` 做快照；写回后逐项比对，任一漂移即中止且不落盘；唯一允许改写的字段是 `m_Mesh` PPtr。`m_BindPose` 属于 Mesh 自身数据，随被替换 Mesh 携带，渲染器级骨骼引用不动。【已验证（单测覆盖快照与漂移检测）；实机表现无法验证】
+- apply 门禁加固（本轮修复）：只有配对计划达到 `reference_swap_eligible`、且**源 Mesh 与目标渲染器两侧** `record_readiness()` 均不 `blocked` 时才允许进入写回；`blocked` 与 `needs_runtime_verification` 一律跳过，不创建/替换 `resources.assets`，`needs_runtime_verification` 不会被自动升级为通过。门禁原因明确区分：几何流解码失败、缺失材质槽、蒙皮权重缺失、骨骼数 / 绑定姿态不匹配、根骨骼缺失。【已验证（单测覆盖）】
+- 引用安全：apply 路径在内存中先对 `m_GameObject / m_Bones / m_RootBone / m_Materials` 以及同层 Animator `m_Controller` 做快照；改写 `m_Mesh` 后逐项比对，任一漂移即 `ReferenceDriftError` 中止且不落盘；唯一允许改写的字段是 `m_Mesh` PPtr。`m_BindPose` 属于 Mesh 自身数据，随被替换 Mesh 携带，渲染器级骨骼引用不动。【已验证（单测覆盖快照与漂移检测）；实机表现无法验证】
+- 落盘策略：内存内完成改写、引用断言与序列化，校验通过且序列化载荷非空后，才通过同目录临时文件 `fsync` + `os.replace` 原子替换目标文件；任何失败路径都不触碰目标资产，也不残留临时文件。【已验证（单测覆盖）】
 - 原型 `--apply-reference-swap` 路径仅做同文件 PPtr 重定向，不实现新几何字节写入；门禁失败的模型记入 `skipped` 并跳过，不强行替换；本分支未在实机上安装验证，也未声称游戏内显示成功。【已验证（代码路径）；实机表现无法验证】
 
 ## 10. 安全边界声明
