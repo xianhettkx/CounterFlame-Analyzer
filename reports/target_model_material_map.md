@@ -89,3 +89,39 @@ The property names below are read from each Unity Material's `m_SavedProperties.
 - It does not prove that a particular skin is loaded, equipped, or rendered in a live match.
 - The skin-specific MonoBehaviour records exist, but their custom typetrees could not be decoded reliably with the available metadata.
 - No IPA contents were modified, rebuilt, injected, or re-signed.
+
+
+## Rig, bone, and animation findings
+
+The follow-up rig scan read 49,496 serialized objects and mapped 18,726 Transform objects. It grouped the target skinned renderers into 79 distinct mesh/bone layouts and traced 12 target-related AnimatorControllers.
+
+### Main skeleton bindings
+
+| Target | Skinned mesh | Bone count | Root bone |
+|---|---|---:|---|
+| Butterfly Knife | `v_knife_t_v_knife_flip_reference` | 13 | Root not exposed in this renderer record |
+| AWP | `v_snip_awp_awp_model` | 57 | `v_weapon.Bip01_R_Forearm` |
+| AWP | `v_snip_awp_reference` | 20 | Root not exposed in this renderer record |
+| AK-47 | `v_rif_ak47_reference1`, `v_rif_ak47_reference2` | 56 each | `v_weapon.Bip01_R_Forearm` |
+| M4A4 | `v_rif_m4a1_reference1`–`reference4` | 43 each | `v_weapon.Bip01_R_Forearm` |
+| Desert Eagle | `v_pist_deagle_deagle_model` | 57 | `v_weapon.Bip01_R_Forearm` |
+| Desert Eagle | `v_pist_deagle_reference` | 54 | `v_weapon.Bip01_R_Forearm` |
+| Specialist Gloves | `v_glove_ct_specialist`, `v_glove_ct_specialist_ct` | 72 common layout | `v_weapon.Bip01_L_Forearm` |
+
+The glove renderers appear in several agent/hand variants, so some instances have 48, 62, 67, 90, or 99 bones. The 72-bone layout is the common specialist glove binding; this is not a separate glove-specific animation set.
+
+### AnimatorController and clip mapping
+
+| Weapon | Controller | Resolved clips |
+|---|---|---:|
+| Butterfly Knife | `butterfly` | 15 |
+| Butterfly/Flip knife family | `flip` | 11 |
+| AWP | `awp_a_new` | 5 |
+| AK-47 | `ak47` | 6 |
+| AK-47 alternate rig | `ak47_a` | 5 |
+| M4A4 | `m4a4` | 5 |
+| Desert Eagle | `deagle` | 9 |
+
+Resolved first-person clip families include draw, idle, inspect, reload, and shoot for the firearms; the butterfly family additionally includes deploy, multiple inspect variants, slash, and backstab clips. The M4A4 controller is attached to GameObjects with legacy `m4a1` naming, consistent with the `v_rif_m4a1_reference*` mesh names that carry the `m4a4` material.
+
+The rig and animation JSON is included in the latest analysis artifact. These are static controller/state/clip references, not proof that a clip plays for a particular skin during a live match.
