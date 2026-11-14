@@ -1,0 +1,60 @@
+name: Local Skin Patch Audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/local-skin-patch.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout analyzer
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Unity asset tools
+        run: pip install -r requirements.txt
+
+      - name: Download and verify original IPA
+        run: |
+          python - <<'PY'
+          import hashlib
+          import urllib.request
+          url = "https://github.com/xianhettkx/CounterFlame-Analyzer/releases/download/ipa-v1/CounterFlame-1.4.1-c7-ios.2.ipa"
+          expected = "6c3e740ca379c5daf55f635e1228414230ca4acb7608cd7b35f7f5c0e0d952d3"
+          req = urllib.request.Request(url, headers={"User-Agent": "CounterFlame-Local-Patch/1.0"})
+          digest = hashlib.sha256()
+          total = 0
+          with urllib.request.urlopen(req, timeout=180) as response, open("input.ipa", "wb") as output:
+              while True:
+                  chunk = response.read(8 * 1024 * 1024)
+                  if not chunk: break
+                  output.write(chunk)
+                  digest.update(chunk)
+                  total += len(chunk)
+          actual = digest.hexdigest()
+          print(f"Downloaded {total} bytes; SHA256={actual}")
+          if actual != expected: raise SystemExit("Original IPA SHA256 verification failed")
+          PY
+
+      - name: Audit local material and texture replacement paths
+        run: python src/unity_local_skin_patch.py input.ipa --out reports/local_skin_patch
+
+      - name: Upload local skin patch audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: counterflame-local-skin-patch-audit
+          path: reports/local_skin_patch/
+          if-no-files-found: error
+          retention-days: 14
