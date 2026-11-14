@@ -44,11 +44,12 @@ ZH = {
 TEXT_KEYS=("text","label","title","desc","message","content","placeholder","tooltip","caption","button","localiz","string")
 def translate_tree(value: Any, stats: dict, key: str=""):
     if isinstance(value,str):
-        if any(k in key.lower() for k in TEXT_KEYS):
-            t=ZH.get(value.strip())
-            if t is not None and value==value.strip():
-                stats[value]=stats.get(value,0)+1
-                return t
+        # Unity typetrees use generated field names, so match exact reviewed
+        # labels regardless of field name. Never translate partial substrings.
+        t=ZH.get(value.strip())
+        if t is not None and value==value.strip():
+            stats[value]=stats.get(value,0)+1
+            return t
         return value
     if isinstance(value,list):
         return [translate_tree(v,stats,key) for v in value]
@@ -128,7 +129,10 @@ def main():
             except Exception as exc:
                 report["errors"].append({"path":info.filename,"error":f"{type(exc).__name__}: {exc}"[:300]})
     report["translation_count"]=len(report["translations"])
+    report["status"]="translated" if report["translated_occurrences"] else "no_matches"
     (out/"chinese_localization_report.json").write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
     print(json.dumps({k:report[k] for k in ("entries_scanned","entries_patched","translated_occurrences","translation_count","errors")},ensure_ascii=False))
     print(f"[OK] Report: {out/'chinese_localization_report.json'}")
+    if report["translated_occurrences"] == 0:
+        raise SystemExit("No reviewed UI strings matched. Refusing to label this IPA as Chinese-localized.")
 if __name__=="__main__": main()
