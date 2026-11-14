@@ -60,8 +60,16 @@ def main():
   refs=list(ptrs(d))
   hit=[r for r in refs if r["path_id"] in targets]
   if not hit: continue
+  direct_owners=[]
+  for r in refs:
+   if r["field"].endswith("m_GameObject") and r["file_id"]==0 and r["path_id"] in objs:
+    try:
+     go=objs[r["path_id"]].read()
+     direct_owners.append({"gameobject_path_id":r["path_id"],"gameobject_name":str(getattr(go,"m_Name","") or "")})
+    except Exception: direct_owners.append({"gameobject_path_id":r["path_id"],"gameobject_name":""})
+  resolved_owners=direct_owners or owners.get(pid,[])
   rows.append({"component_path_id":pid,"component_type":typ,"component_name":peek(o),
-   "owners":owners.get(pid,[]),"target_mesh_refs":[{**r,"skin_key":targets[r["path_id"]],"mesh_name":names_by_id.get(r["path_id"],"")} for r in hit],
+   "owners":resolved_owners,"target_mesh_refs":[{**r,"skin_key":targets[r["path_id"]],"mesh_name":names_by_id.get(r["path_id"],"")} for r in hit],
    "all_refs":refs})
  result={"tool":"Unity target mesh renderer linkage audit","asset":path,
   "target_mesh_count":len(targets),"matched_component_count":len(rows),
