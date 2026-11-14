@@ -143,8 +143,11 @@ def process_entry(raw: bytes, label: str):
 
 def main():
     ap=argparse.ArgumentParser()
-    ap.add_argument("ipa"); ap.add_argument("--out-dir",default="reports/chinese_localization")
+    ap.add_argument("ipa"); ap.add_argument("--out-dir",default="reports/chinese_localization"); ap.add_argument("--resources-override",default=None)
     args=ap.parse_args(); out=Path(args.out_dir); files=out/"files"; files.mkdir(parents=True,exist_ok=True)
+    resources_override=Path(args.resources_override) if args.resources_override else None
+    if resources_override is not None and not resources_override.is_file():
+        raise SystemExit(f"resources override not found: {resources_override}")
     report={"language":"简体中文","mode":"exact-reviewed-labels-v2","entries_scanned":0,"entries_patched":0,
             "translated_occurrences":0,"translations":{},"patched_entries":[],"errors":[],
             "limitations":["只替换字典中明确审核的完整界面词条，未知文本不改动。",
@@ -156,7 +159,8 @@ def main():
             if not (low.endswith(".bundle") or low.endswith(".assets")): continue
             report["entries_scanned"]+=1
             try:
-                patched,counts=process_entry(zf.read(info),info.filename)
+                raw = resources_override.read_bytes() if resources_override is not None and low.endswith("/resources.assets") else zf.read(info)
+                patched,counts=process_entry(raw,info.filename)
                 for k,n in counts.items():
                     report["translations"][k]=report["translations"].get(k,0)+n
                     report["translated_occurrences"]+=n
