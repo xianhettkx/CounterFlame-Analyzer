@@ -78,7 +78,7 @@ def main():
             refs=[resolve(x) for x in ptr_fields(data)]
             script_ref=next((x for x in refs if x.get("field","").endswith("m_Script")),None)
             script=meta.get(script_ref['path_id'],{}) if script_ref else {}
-            row={"owner_gameobject":meta[int(go.path_id)],"component":meta[p["path_id]],
+            row={"owner_gameobject":meta[int(go.path_id)],"component":meta[p['path_id']],
                  "script":script,"script_pointer":script_ref,"references":refs}
             try:
                 attrs=vars(data)
