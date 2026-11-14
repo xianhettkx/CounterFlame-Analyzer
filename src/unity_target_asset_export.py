@@ -78,6 +78,55 @@ def run(ipa: Path, reports: Path, out: Path) -> dict[str, Any]:
                     manifest["texture_exports"].append({"skin_key":skin,"bundle_path":bundle_path,"path_id":int(obj.path_id),"texture_name":name,"width":int(getattr(tex,"m_Width",0)),"height":int(getattr(tex,"m_Height",0)),"file":str(Path("target_textures")/safe_name(skin)/filename),"bytes":target.stat().st_size})
                 except Exception as exc:
                     manifest["texture_exports"].append({"bundle_path":bundle_path,"path_id":int(obj.path_id),"error":f"{type(exc).__name__}: {exc}"[:200]})
+    # Build portable OBJ+MTL previews. These are static, unrigged previews; the MTL
+    # binds the skin's verified main-color texture to the matching base mesh UVs.
+    preview_dir=out/"skin_previews"
+    preview_dir.mkdir(exist_ok=True)
+    preview_specs={
+        "butterfly_marblefade":{"mesh_id":2233,"texture":"butterfly_marblefade_cs2"},
+        "specialist_pillow":{"mesh_id":2217,"texture":"glove_specialist_left"},
+        "awp_dragonlore":{"mesh_id":2114,"texture":"awp_dragonlore_cs2"},
+        "ak47_neonrevolution":{"mesh_id":2014,"texture":"ak47_neonrevolution_cs2"},
+        "m4a4_emperor":{"mesh_id":1926,"texture":"m4a4_emperor_cs2"},
+        "deagle_codered":{"mesh_id":2112,"texture":"deagle_codered_cs2"},
+    }
+    mesh_by_id={int(x["path_id"]):x for x in manifest["mesh_exports"]}
+    texture_by_name={x["texture_name"]:x for x in manifest["texture_exports"] if x.get("file")}
+    manifest["skin_previews"]=[]
+    for skin,spec in preview_specs.items():
+        mesh_entry=mesh_by_id.get(spec["mesh_id"])
+        texture_entry=texture_by_name.get(spec["texture"])
+        if not mesh_entry or not texture_entry:
+            manifest["skin_previews"].append({"skin_key":skin,"error":"mesh or albedo texture missing","mesh_found":bool(mesh_entry),"texture_found":bool(texture_entry)})
+            continue
+        skin_dir=preview_dir/safe_name(skin)
+        skin_dir.mkdir(exist_ok=True)
+        source_obj=out/mesh_entry["file"]
+        obj_name=f"{safe_name(skin)}.obj"
+        mtl_name=f"{safe_name(skin)}.mtl"
+        texture_source=out/texture_entry["file"]
+        texture_name=f"{safe_name(spec['texture'])}.png"
+        texture_target=skin_dir/texture_name
+        shutil.copy2(texture_source,texture_target)
+        mtl_text="newmtl SkinAlbedo\\nKa 0.15 0.15 0.15\\nKd 1.0 1.0 1.0\\nKs 0.15 0.15 0.15\\nNs 32.0\\nd 1.0\\nillum 2\\nmap_Kd "+texture_name+"\\n"
+        (skin_dir/mtl_name).write_text(mtl_text,encoding="utf-8")
+        source_text=source_obj.read_text(encoding="utf-8",errors="replace")
+        lines=source_text.splitlines()
+        decorated=[f"mtllib {mtl_name}"]
+        for line in lines:
+            decorated.append(line)
+            if line.startswith("g ") or line.startswith("o "):
+                decorated.append("usemtl SkinAlbedo")
+        (skin_dir/obj_name).write_text("\\n".join(decorated)+"\\n",encoding="utf-8")
+        manifest["skin_previews"].append({"skin_key":skin,"mesh_name":mesh_entry["mesh_name"],"mesh_path_id":spec["mesh_id"],"texture_name":spec["texture"],"obj":str(Path("skin_previews")/safe_name(skin)/obj_name),"mtl":str(Path("skin_previews")/safe_name(skin)/mtl_name),"texture":str(Path("skin_previews")/safe_name(skin)/texture_name),"note":"Static UV-textured preview only; no skeleton weights or animation."})
+    preview_readme="""# Six-skin static 3D previews
+
+Each folder contains one OBJ mesh, an MTL material, and its selected main-color texture. Open the OBJ in a 3D viewer that supports OBJ/MTL and relative texture paths.
+
+These previews are static and unrigged. They are intended to validate UV placement and texture-to-mesh correspondence, not to reproduce the game's runtime shader, normal/specular maps, lighting, skeleton, or animation. The original IPA remains unchanged.
+"""
+    (preview_dir/"README.md").write_text(preview_readme,encoding="utf-8")
+
     # Bundle the static rig/animation map and human-readable mapping report with the exported assets.
     for source in (reports/"unity_rig_animation_map.json", reports/"target_model_material_map.md"):
         if source.exists():
