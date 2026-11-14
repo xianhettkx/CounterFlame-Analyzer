@@ -158,7 +158,7 @@ def main()->int:
                         for ptr in ptr_fields(material_data):
                             fid=ptr["file_id"]
                             target={"field":ptr["field"],"file_id":fid,"path_id":ptr["path_id"]}
-                            prop_match=__import__("re").search(r"m_TexEnvs\\[(\\d+)\\]",ptr["field"])
+                            prop_match=__import__("re").search(r"m_TexEnvs\[(\d+)\]",ptr["field"])
                             if prop_match:
                                 prop_index=int(prop_match.group(1))
                                 if prop_index<len(tex_property_names):
