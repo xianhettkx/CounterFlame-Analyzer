@@ -1,4 +1,5 @@
 name: Audit Skin Runtime Component Links
+# Re-run after correcting the component audit parser
 
 on:
   push:
