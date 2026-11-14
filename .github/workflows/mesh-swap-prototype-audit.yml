@@ -47,6 +47,9 @@ jobs:
         run: |
           mkdir -p reports/mesh_swap_prototype_run
           python src/unity_mesh_swap_prototype.py input.ipa --out reports/mesh_swap_prototype_run 2>&1 | tee reports/mesh_swap_prototype_run/audit.log
+      - name: Map renderer owners and material slots
+        run: |
+          python src/unity_mesh_renderer_link_audit.py input.ipa --out reports/mesh_swap_prototype_run/renderer_links
       - name: Upload mesh swap audit evidence
         uses: actions/upload-artifact@v4
         with:
