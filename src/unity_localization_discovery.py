@@ -82,7 +82,7 @@ def main():
     report={"mode":"read_only_string_discovery","assets_scanned":scanned,
             "candidate_occurrences":len(rows),"unique_strings":len(by_text),
             "errors":errors,"strings":sorted(by_text.values(),key=lambda x:(x["text"].casefold(),x["text"]))}
-    (out/"localization_string_inventory.json").write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
+    (out/"localization_string_inventory.json").write_text(json.dumps(report,ensure_ascii=True,indent=2),encoding="utf-8")
     counts=Counter(r["type"] for r in rows)
     print(json.dumps({"assets_scanned":scanned,"candidate_occurrences":len(rows),
                       "unique_strings":len(by_text),"by_type":dict(counts),"errors":len(errors)},ensure_ascii=False))
