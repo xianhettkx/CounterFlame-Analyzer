@@ -72,30 +72,41 @@ jobs:
           if report["files"]["CounterFlameKAlert551.dylib"].get("status") == "not_found":
               raise SystemExit("Reference inventory dylib missing")
           PY
-      - name: Inspect Mach-O dynamic library load commands
+      - name: Inspect Mach-O injection and linkage evidence
         run: |
           python - <<'PY'
           import struct, json, pathlib
           root = pathlib.Path("runtime-evidence")
-          path = root / "CounterFlame"
-          if not path.exists():
-              raise SystemExit("Main app executable was not extracted")
-          data = path.read_bytes()
-          if data[:4] != b"\xcf\xfa\xed\xfe":
-              raise SystemExit(f"Unsupported main executable Mach-O magic: {data[:4].hex()}")
-          header = struct.unpack_from("<IiiIIIII", data, 0)
-          ncmds, offset = header[4], 32
-          dylib_cmds = {0xc:"LC_LOAD_DYLIB",0x80000018:"LC_LOAD_WEAK_DYLIB",0x8000001f:"LC_REEXPORT_DYLIB",0x80000023:"LC_LOAD_UPWARD_DYLIB"}
-          found = []
-          for _ in range(ncmds):
-              cmd, cmdsize = struct.unpack_from("<II", data, offset)
-              if cmd in dylib_cmds and cmdsize >= 24:
-                  nameoff = struct.unpack_from("<I", data, offset+8)[0]
-                  raw = data[offset+nameoff:offset+cmdsize].split(b"\0",1)[0]
-                  found.append({"command":dylib_cmds[cmd],"name":raw.decode("utf-8","replace")})
-              offset += cmdsize
-          report = {"scope":"Static Mach-O load-command inspection only; no code execution.","main_executable_bytes":len(data),"load_commands":found,"reference_inventory_dylib_loaded_by_main_executable":any(x["name"].endswith("CounterFlameKAlert551.dylib") for x in found)}
-          (root/"macho-load-commands.json").write_text(json.dumps(report,indent=2),encoding="utf-8")
+          def inspect(path):
+              data = path.read_bytes()
+              if data[:4] != b"\\xcf\\xfa\\xed\\xfe":
+                  raise SystemExit(f"Unsupported Mach-O magic in {path.name}: {data[:4].hex()}")
+              header = struct.unpack_from("<IiiIIIII", data, 0)
+              ncmds, offset = header[4], 32
+              dylib_cmds = {0xc:"LC_LOAD_DYLIB",0x80000018:"LC_LOAD_WEAK_DYLIB",0x8000001f:"LC_REEXPORT_DYLIB",0x80000023:"LC_LOAD_UPWARD_DYLIB",0xd:"LC_ID_DYLIB"}
+              found = []
+              for _ in range(ncmds):
+                  cmd, cmdsize = struct.unpack_from("<II", data, offset)
+                  if cmd in dylib_cmds and cmdsize >= 24:
+                      nameoff = struct.unpack_from("<I", data, offset+8)[0]
+                      raw = data[offset+nameoff:offset+cmdsize].split(b"\\0",1)[0]
+                      found.append({"command":dylib_cmds[cmd],"name":raw.decode("utf-8","replace")})
+                  offset += cmdsize
+              return {"file":path.name,"bytes":len(data),"cpu_type":header[1],"file_type":header[3],"load_commands":found}
+          app = inspect(root/"CounterFlame")
+          tweak = inspect(root/"CounterFlameKAlert551.dylib")
+          install = next((x["name"] for x in tweak["load_commands"] if x["command"]=="LC_ID_DYLIB"),None)
+          app_loads = [x["name"] for x in app["load_commands"] if x["command"]!="LC_ID_DYLIB"]
+          report = {
+            "scope":"Static Mach-O load-command inspection only; no code execution.",
+            "main_executable":app,
+            "reference_module":tweak,
+            "reference_module_install_name":install,
+            "main_executable_directly_loads_reference_module":any(x.endswith("CounterFlameKAlert551.dylib") for x in app_loads),
+            "install_name_indicates_mobile_substrate_injection_path":bool(install and "/Library/MobileSubstrate/DynamicLibraries/" in install),
+            "interpretation":"A MobileSubstrate install name is evidence consistent with an injected tweak deployment. It does not alone prove the exact injector, filter plist, or runtime execution."
+          }
+          (root/"macho-linkage-analysis.json").write_text(json.dumps(report,indent=2),encoding="utf-8")
           print(json.dumps(report,indent=2))
           PY
       - name: Produce local-inventory symbol triage
