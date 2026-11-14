@@ -155,6 +155,15 @@ def main():
             continue
         counts=", ".join(str(x["bone_count"]) for x in r["renderer_instances"]) or "none"
         md.append(f"| {r['skin_key']} | {r['mesh_name']} | {r['vertex_count']} | {r['skin_weight_entry_count']} | {r['bind_pose_count']} | {counts} | {'yes' if r['conversion_candidate'] else 'no'} |")
+    weighted=[r for r in rows if int(r.get("skin_weight_entry_count",0) or 0)>0]
+    unweighted_weapons=[r for r in rows if r.get("skin_key")!="specialist_pillow" and not r.get("error")]
+    md += ["","## Findings",""]
+    if weighted:
+        glove_rows=[r for r in weighted if r.get("skin_key")=="specialist_pillow"]
+        if glove_rows:
+            md.append(f"- Specialist glove mesh records contain decoded vertex weights; the main 67-bone mesh has {glove_rows[0].get('skin_weight_entry_count',0)} weight entries and {glove_rows[0].get('bind_pose_count',0)} bind poses.")
+    if unweighted_weapons and all(int(r.get("skin_weight_entry_count",0) or 0)==0 and int(r.get("compressed_weight_item_count",0) or 0)==0 and int(r.get("variable_bone_weight_data_count",0) or 0)==0 for r in unweighted_weapons):
+        md.append("- The inspected weapon meshes have renderer bone references and bind poses, but no decoded or compressed per-vertex skin weights, no variable-bone weight data, and no active blend-weight vertex channel. They remain static-mesh previews in this export; no rigging was fabricated.")
     md += ["","## Interpretation","",
         "The candidate column checks for skin-weight entries, bind poses, and at least one serialized SkinnedMeshRenderer reference. It does not guarantee correct joint ordering, transforms, coordinate conversion, or GLB validation.",
         "The original IPA is read-only."]
