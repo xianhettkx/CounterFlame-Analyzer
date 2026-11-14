@@ -6,7 +6,7 @@ from collections import Counter
 from pathlib import Path
 
 ASCII_RUN = re.compile(rb"[ -~]{3,160}")
-LIKELY = re.compile(r"[A-Za-z]{2,}|[\\u4e00-\\u9fff]")
+LIKELY = re.compile(r"[\u4e00-\u9fff]")
 
 def walk(value, path="$"):
     if isinstance(value, str):
