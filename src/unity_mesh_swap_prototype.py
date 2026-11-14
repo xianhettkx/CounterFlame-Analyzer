@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import zipfile
 import tempfile
 from pathlib import Path
@@ -27,20 +28,32 @@ from typing import Any, Optional
 
 try:  # package import under tests; flat import when run as a script
     from .unity_mesh_swap_plan import (
+        APPLY_WRITABLE_PLAN_STATUS,
         MeshModelRecord,
         SwapPlan,
         evaluate_swap,
+        readiness_allows_apply,
         record_readiness,
         summarize_manifests,
     )
 except ImportError:  # pragma: no cover - script entry point
     from unity_mesh_swap_plan import (
+        APPLY_WRITABLE_PLAN_STATUS,
         MeshModelRecord,
         SwapPlan,
         evaluate_swap,
+        readiness_allows_apply,
         record_readiness,
         summarize_manifests,
     )
+
+
+class ReferenceDriftError(Exception):
+    """Raised when a preserved reference drifts after the m_Mesh repoint.
+
+    No asset bytes are written when this is raised; the abort happens before
+    any serialization or file replacement.
+    """
 
 
 # Renderer reference fields that a mesh reference swap must never rewrite.
@@ -95,6 +108,110 @@ def gv(obj: Any, key: str, default: Any = None) -> Any:
         return getattr(obj, key)
     except Exception:
         return default
+
+
+def atomic_write_bytes(path: Path, data: bytes) -> None:
+    """Write bytes to ``path`` via a same-directory temp file then os.replace.
+
+    The target is only replaced after the temp file is flushed and fsynced;
+    any failure leaves the original target untouched and removes the temp file.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=".cf_mesh_swap_", suffix=".tmp", dir=str(path.parent)
+    )
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(data)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp_name, path)
+    except Exception:
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        raise
+
+
+def decide_apply(
+    source: MeshModelRecord, target: MeshModelRecord
+) -> dict[str, Any]:
+    """Evaluate the pair plan and single-record readiness on *both* sides.
+
+    Apply is allowed only when the pair plan reaches
+    ``reference_swap_eligible`` and neither side is ``blocked``. A skinned
+    pair that still needs runtime verification is **not** promoted; it is
+    skipped and never serialized to disk.
+    """
+    plan = evaluate_swap(source, target)
+    source_status, source_reasons = record_readiness(source)
+    target_status, target_reasons = record_readiness(target)
+    reasons: list[str] = list(source_reasons) + list(target_reasons)
+    reasons.extend(c.detail for c in plan.blocking_checks)
+
+    eligible = (
+        plan.status == APPLY_WRITABLE_PLAN_STATUS
+        and readiness_allows_apply(source_status)
+        and readiness_allows_apply(target_status)
+    )
+    return {
+        "plan": plan,
+        "plan_status": plan.status,
+        "source_readiness": source_status,
+        "target_readiness": target_status,
+        "reasons": reasons,
+        "eligible": eligible,
+    }
+
+
+def assert_no_reference_drift(
+    before: dict[str, Any],
+    after: dict[str, Any],
+    animator_before: Optional[dict[str, int]],
+    animator_after: Optional[dict[str, int]],
+) -> None:
+    if before != after:
+        raise ReferenceDriftError(
+            "reference drift detected after m_Mesh write; bones/root/materials/"
+            "GameObject must be unchanged; no file written"
+        )
+    if animator_before != animator_after:
+        raise ReferenceDriftError(
+            "Animator controller reference drifted; no file written"
+        )
+
+
+def perform_reference_swap(
+    data: Any, objs: dict[int, Any], mesh_pid: int
+) -> dict[str, Any]:
+    """Repoint ``m_Mesh`` in memory and assert every preserved reference held.
+
+    The only field mutated is the renderer's ``m_Mesh`` PPtr. If any preserved
+    renderer reference or the Animator controller drifts, ``ReferenceDriftError``
+    is raised before serialization; nothing is written to disk.
+    """
+    go_ptr = ptr(gv(data, "m_GameObject", None))
+    go_pid = go_ptr["path_id"] if go_ptr else 0
+    before = snapshot_renderer_references(data)
+    animator_before = snapshot_animator_controller(objs, go_pid)
+
+    # The single mutation allowed by this prototype: m_Mesh PPtr.
+    data.m_Mesh.m_FileID = 0
+    data.m_Mesh.m_PathID = mesh_pid
+
+    after = snapshot_renderer_references(data)
+    animator_after = snapshot_animator_controller(objs, go_pid)
+
+    assert_no_reference_drift(before, after, animator_before, animator_after)
+    return {
+        "before": before,
+        "after": after,
+        "animator_before": animator_before,
+        "animator_after": animator_after,
+        "go_pid": go_pid,
+    }
 
 
 def ptr(p: Any) -> Optional[dict[str, int]]:
@@ -215,6 +332,94 @@ def _mesh_record(objs: dict[int, Any], mesh_pid: int, skin_key: str = "", side: 
     return record
 
 
+def apply_reference_swap(
+    env: Any,
+    objs: dict[int, Any],
+    renderer_pid: int,
+    mesh_pid: int,
+    out_path: Path,
+    source_record: Optional[MeshModelRecord] = None,
+    target_record: Optional[MeshModelRecord] = None,
+) -> dict[str, Any]:
+    """Gated, atomic reference-swap orchestrator.
+
+    Returns a report fragment. On any blocked / not-eligible / drift condition
+    the function returns ``applied=False`` and **never creates the output
+    asset**. Only an eligible plan proceeds: the mutation and reference guards
+    run in memory, the payload is serialized and validated in memory, and only
+    then is the target file replaced atomically.
+    """
+    report: dict[str, Any] = {"applied": False, "skipped": []}
+    renderer = objs.get(renderer_pid)
+    target_mesh = objs.get(mesh_pid)
+    if renderer is None or target_mesh is None:
+        raise SystemExit("renderer or mesh path id not found in serialized file")
+    if target_mesh.type.name != "Mesh":
+        raise SystemExit("selected --mesh-pid does not resolve to a Mesh object")
+
+    source = source_record if source_record is not None else _mesh_record(objs, mesh_pid)
+    data = renderer.read()
+    current = ptr(gv(data, "m_Mesh", None))
+    target = (
+        target_record
+        if target_record is not None
+        else (_mesh_record(objs, current["path_id"]) if current else None)
+    )
+    if source is None or target is None:
+        raise SystemExit("could not build swap plan for selected objects")
+
+    decision = decide_apply(source, target)
+    plan: SwapPlan = decision["plan"]
+    report["applied_plan"] = {
+        "renderer_pid": renderer_pid,
+        "mesh_pid": mesh_pid,
+        "status": plan.status,
+        "source_readiness": decision["source_readiness"],
+        "target_readiness": decision["target_readiness"],
+        "checks": [vars(c) for c in plan.checks],
+        "preserved_references": list(plan.preserved_references),
+    }
+
+    if not decision["eligible"]:
+        # Gate failure: blocked or still needs runtime verification. Skip this
+        # model entirely; never write a patch file.
+        report["applied"] = False
+        report["skipped"].append({
+            "mesh_path_id": source.mesh_path_id,
+            "mesh_name": source.mesh_name,
+            "renderer_pid": renderer_pid,
+            "status": plan.status,
+            "source_readiness": decision["source_readiness"],
+            "target_readiness": decision["target_readiness"],
+            "reasons": decision["reasons"],
+        })
+        report["note"] = (
+            "Not eligible for reference swap (blocked or needs runtime "
+            "verification); skipped without writing any asset bytes."
+        )
+        return report
+
+    # In-memory mutation + reference guard; drift aborts before serialization.
+    swap = perform_reference_swap(data, objs, mesh_pid)
+
+    data.save()
+    payload = env.file.save()
+    if not payload:
+        raise ReferenceDriftError("serialized payload is empty; refusing to write")
+
+    atomic_write_bytes(Path(out_path), payload)
+    report["applied"] = True
+    report["patch_file"] = str(out_path)
+    report["preserved_before"] = swap["before"]
+    report["preserved_after"] = swap["after"]
+    report["note"] = (
+        "Reference-swap prototype output; re-sign and on-device test required "
+        "before any install. No inventory, entitlement, network or anti-cheat "
+        "code was modified."
+    )
+    return report
+
+
 def load_resources(ipa_path: Path, out: Path) -> tuple[Any, dict[int, Any], Path]:
     import UnityPy
 
@@ -261,17 +466,17 @@ def plan_cross_swaps(records: list[MeshModelRecord]) -> list[dict[str, Any]]:
                     continue
                 plan: SwapPlan = evaluate_swap(source, target)
                 plans.append({
-                "skin_key": source.skin_key,
-                "source_mesh_path_id": source.mesh_path_id,
-                "source_mesh_name": source.mesh_name,
-                "source_side": source.side,
-                "target_mesh_path_id": target.mesh_path_id,
-                "target_mesh_name": target.mesh_name,
-                "target_side": target.side,
-                "status": plan.status,
-                "checks": [vars(c) for c in plan.checks],
-                "preserved_references": list(plan.preserved_references),
-            })
+                    "skin_key": source.skin_key,
+                    "source_mesh_path_id": source.mesh_path_id,
+                    "source_mesh_name": source.mesh_name,
+                    "source_side": source.side,
+                    "target_mesh_path_id": target.mesh_path_id,
+                    "target_mesh_name": target.mesh_name,
+                    "target_side": target.side,
+                    "status": plan.status,
+                    "checks": [vars(c) for c in plan.checks],
+                    "preserved_references": list(plan.preserved_references),
+                })
     return plans
 
 
@@ -350,69 +555,22 @@ def main() -> int:
     if args.apply_reference_swap:
         if not args.renderer_pid or not args.mesh_pid:
             raise SystemExit("--apply-reference-swap requires --renderer-pid and --mesh-pid")
-        renderer = objs.get(args.renderer_pid)
-        target_mesh = objs.get(args.mesh_pid)
-        if renderer is None or target_mesh is None:
-            raise SystemExit("renderer or mesh path id not found in serialized file")
-        if target_mesh.type.name != "Mesh":
-            raise SystemExit("selected --mesh-pid does not resolve to a Mesh object")
-        source = _mesh_record(objs, args.mesh_pid)
-        # Build a target record from the renderer's current mesh for the plan.
-        data = renderer.read()
-        current = ptr(gv(data, "m_Mesh", None))
-        target = _mesh_record(objs, current["path_id"]) if current else None
-        if source is None or target is None:
-            raise SystemExit("could not build swap plan for selected objects")
-        plan = evaluate_swap(source, target)
-        go_ptr = ptr(gv(data, "m_GameObject", None))
-        animator_before = snapshot_animator_controller(objs, go_ptr["path_id"] if go_ptr else 0)
-        plan_report: dict[str, Any] = {
-            "renderer_pid": args.renderer_pid,
-            "mesh_pid": args.mesh_pid,
-            "status": plan.status,
-            "checks": [vars(c) for c in plan.checks],
-            "preserved_references": list(plan.preserved_references),
-        }
-        report["applied_plan"] = plan_report
-
-        if plan.status == "blocked":
-            # Gate failure: skip this model entirely; never write a patch file.
-            report["applied"] = False
-            report["skipped"].append({
-                "mesh_path_id": source.mesh_path_id,
-                "mesh_name": source.mesh_name,
-                "renderer_pid": args.renderer_pid,
-                "status": "blocked",
-                "reasons": [c.detail for c in plan.blocking_checks],
-            })
-            report["note"] = "Blocked by invariant checks; skipped without writing any asset bytes."
-        else:
-            # Snapshot every renderer-level reference before the only allowed write.
-            references_before = snapshot_renderer_references(data)
-            # The single mutation allowed by this prototype: m_Mesh PPtr.
-            data.m_Mesh.m_FileID = 0
-            data.m_Mesh.m_PathID = args.mesh_pid
-            references_after = snapshot_renderer_references(data)
-            animator_after = snapshot_animator_controller(objs, go_ptr["path_id"] if go_ptr else 0)
-
-            if references_before != references_after:
-                # Reference drift detected: abort before serializing anything.
-                raise SystemExit(
-                    "reference drift detected after m_Mesh write; bones/root/materials/GameObject "
-                    "must be unchanged; no file written"
-                )
-            if animator_before != animator_after:
-                raise SystemExit("Animator controller reference drifted; no file written")
-
-            data.save()
-            output_asset = out / "resources.assets"
-            output_asset.write_bytes(env.file.save())
-            report["applied"] = True
-            report["patch_file"] = str(output_asset)
-            report["note"] = (
-                "Reference-swap prototype output; re-sign and on-device test required before any install. "
-                "No inventory, entitlement, network or anti-cheat code was modified."
-            )
+        # The orchestrator never writes the output asset on blocked,
+        # needs_runtime_verification, or reference-drift conditions.
+        fragment = apply_reference_swap(
+            env,
+            objs,
+            args.renderer_pid,
+            args.mesh_pid,
+            out / "resources.assets",
+        )
+        report["applied"] = fragment["applied"]
+        report["applied_plan"] = fragment.get("applied_plan")
+        report["note"] = fragment.get("note")
+        report["patch_file"] = fragment.get("patch_file")
+        report["preserved_before"] = fragment.get("preserved_before")
+        report["preserved_after"] = fragment.get("preserved_after")
+        report["skipped"].extend(fragment.get("skipped", []))
 
     (out / "mesh_swap_plan_report.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
