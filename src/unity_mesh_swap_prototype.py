@@ -72,35 +72,102 @@ def snapshot_renderer_references(data: Any) -> dict[str, Any]:
     }
 
 
-def snapshot_animator_controller(objs: dict[int, Any], go_pid: int) -> Optional[dict[str, int]]:
-    """Locate the Animator on the GameObject and capture its controller PPtr.
-
-    Animators may live on a parent rig rather than the mesh GameObject; in that
-    case this returns None and the caller records that the controller was not
-    located at this level. The controller reference itself is never rewritten.
-    """
-    if not go_pid or go_pid not in objs:
-        return None
+def _gameobject_components(objs: dict[int, Any], go_pid: int) -> list[tuple[int, Any]]:
+    """Return (component path id, object) pairs for a Unity GameObject."""
+    if go_pid not in objs:
+        raise ReferenceDriftError(f"GameObject {go_pid} is missing; hierarchy cannot be verified")
     try:
         go_data = objs[go_pid].read()
-    except Exception:
-        return None
+    except Exception as exc:
+        raise ReferenceDriftError(f"GameObject {go_pid} cannot be read: {exc}") from exc
+    found: list[tuple[int, Any]] = []
     for pair in gv(go_data, "m_Component", []) or []:
         comp = gv(pair, "component", None)
         if comp is None and isinstance(pair, (list, tuple)) and len(pair) > 1:
             comp = pair[1]
         component = ptr(comp)
-        if not component or component["path_id"] not in objs:
-            continue
-        candidate = objs[component["path_id"]]
-        if candidate.type.name != "Animator":
-            continue
+        if component and component["file_id"] == 0 and component["path_id"] in objs:
+            found.append((component["path_id"], objs[component["path_id"]]))
+    return found
+
+
+def snapshot_animator_controller(objs: dict[int, Any], go_pid: int) -> dict[str, Any]:
+    """Snapshot Animator/controller/avatar and Transform hierarchy up to the root.
+
+    Unity rigs commonly put Animator on an ancestor GameObject. Walk from the
+    renderer GameObject through Transform.m_Father, recording each Transform's
+    father/children and every Animator's controller/avatar. Any broken link,
+    unreadable node, or cycle fails closed before serialization.
+    """
+    if not go_pid or go_pid not in objs:
+        raise ReferenceDriftError("renderer GameObject is missing; hierarchy cannot be verified")
+
+    nodes: list[dict[str, Any]] = []
+    seen_go: set[int] = set()
+    current_go = go_pid
+    while current_go:
+        if current_go in seen_go:
+            raise ReferenceDriftError("Transform.m_Father cycle detected; no file written")
+        seen_go.add(current_go)
+
+        components = _gameobject_components(objs, current_go)
+        transforms = [(pid, obj) for pid, obj in components if obj.type.name == "Transform"]
+        if len(transforms) != 1:
+            raise ReferenceDriftError(
+                f"GameObject {current_go} has {len(transforms)} Transform components; "
+                "hierarchy cannot be verified"
+            )
+        transform_pid, transform_obj = transforms[0]
         try:
-            anim_data = candidate.read()
-            return ptr(gv(anim_data, "m_Controller", None))
-        except Exception:
-            return None
-    return None
+            transform_data = transform_obj.read()
+        except Exception as exc:
+            raise ReferenceDriftError(f"Transform {transform_pid} cannot be read: {exc}") from exc
+
+        father = ptr(gv(transform_data, "m_Father", None))
+        children = [ptr(child) for child in (gv(transform_data, "m_Children", []) or [])]
+        animators: list[dict[str, Any]] = []
+        for component_pid, component_obj in components:
+            if component_obj.type.name != "Animator":
+                continue
+            try:
+                animator_data = component_obj.read()
+            except Exception as exc:
+                raise ReferenceDriftError(
+                    f"Animator {component_pid} cannot be read: {exc}"
+                ) from exc
+            animators.append({
+                "animator_path_id": component_pid,
+                "controller": ptr(gv(animator_data, "m_Controller", None)),
+                "avatar": ptr(gv(animator_data, "m_Avatar", None)),
+            })
+
+        nodes.append({
+            "gameobject_path_id": current_go,
+            "transform_path_id": transform_pid,
+            "father": father,
+            "children": children,
+            "animators": animators,
+        })
+
+        if not father or father["path_id"] == 0:
+            break
+        if father["file_id"] != 0 or father["path_id"] not in objs:
+            raise ReferenceDriftError(
+                f"Transform {transform_pid} has an unresolved parent reference; no file written"
+            )
+        parent_transform = objs[father["path_id"]]
+        if parent_transform.type.name != "Transform":
+            raise ReferenceDriftError("Transform.m_Father does not point to a Transform")
+        try:
+            parent_transform_data = parent_transform.read()
+        except Exception as exc:
+            raise ReferenceDriftError(f"Parent Transform cannot be read: {exc}") from exc
+        parent_go = ptr(gv(parent_transform_data, "m_GameObject", None))
+        if not parent_go or parent_go["file_id"] != 0 or parent_go["path_id"] not in objs:
+            raise ReferenceDriftError("Parent Transform has no resolvable GameObject")
+        current_go = parent_go["path_id"]
+
+    return {"nodes": nodes}
 
 
 def gv(obj: Any, key: str, default: Any = None) -> Any:
@@ -169,8 +236,8 @@ def decide_apply(
 def assert_no_reference_drift(
     before: dict[str, Any],
     after: dict[str, Any],
-    animator_before: Optional[dict[str, int]],
-    animator_after: Optional[dict[str, int]],
+    animator_before: Optional[dict[str, Any]],
+    animator_after: Optional[dict[str, Any]],
 ) -> None:
     if before != after:
         raise ReferenceDriftError(
