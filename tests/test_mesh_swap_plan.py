@@ -129,6 +129,24 @@ class MeshSwapPlanTests(unittest.TestCase):
         self.assertEqual(plan.status, "blocked")
         self.assertTrue(any(c.check == "renderer_side_match" and not c.passed for c in plan.checks))
 
+    def test_weapon_body_cannot_be_paired_with_magazine_mesh(self):
+        source = static_filter(1978)
+        target = static_filter(1979)
+        source.mesh_name = "w_rif_m4a1"
+        target.mesh_name = "w_rif_m4a1_mag"
+        plan = evaluate_swap(source, target)
+        self.assertEqual(plan.status, "blocked")
+        self.assertTrue(any(c.check == "mesh_role_match" and not c.passed for c in plan.checks))
+
+    def test_world_model_cannot_be_paired_with_third_person_handheld_model(self):
+        source = static_filter(1980)
+        target = static_filter(2045)
+        source.mesh_name = "w_snip_awp"
+        target.mesh_name = "tps_AWP02515"
+        plan = evaluate_swap(source, target)
+        self.assertEqual(plan.status, "blocked")
+        self.assertTrue(any(c.check == "mesh_role_match" and not c.passed for c in plan.checks))
+
     def test_skinned_pair_with_different_bone_order_is_blocked(self):
         source = glove(2000, 3, 3)
         target = glove(2217, 3, 3)
