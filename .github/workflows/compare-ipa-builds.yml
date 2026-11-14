@@ -21,8 +21,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install Unity asset parser
+        run: python -m pip install UnityPy==1.24.2
       - name: Download, verify, and compare both IPA archives
         run: python src/compare_ipa_builds.py
+      - name: Compare serialized resources.assets objects
+        run: python src/compare_resources_assets_objects.py
       - name: Audit modified executable and added dylib strings
         run: python src/audit_reference_binary.py
       - name: Upload comparison and static audit reports
