@@ -237,7 +237,7 @@ def main():
                                 if image.size!=target_size:
                                     from PIL import Image
                                     image=image.resize(target_size,Image.Resampling.LANCZOS)
-                                base_tex_data.set_image(image,in_cab=False)
+                                base_tex_data.image=image
                                 base_tex_data.save()
                                 replacements.append({
                                     "skin_key":skin_key,"base_material":base_name,"slot":slot,
