@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Read-only discovery of candidate UI/localization strings in Unity IPA assets."""
 from __future__ import annotations
-import argparse, json, re, zipfile
+import argparse, json, re, struct, zipfile
 from collections import Counter
 from pathlib import Path
 
@@ -106,6 +106,29 @@ def scan_native_binaries(zf):
             raw = zf.read(info)
         except Exception:
             continue
+        if name.endswith("global-metadata.dat") and len(raw) >= 24:
+            try:
+                sanity, version = struct.unpack_from("<II", raw, 0)
+                literal_offset, literal_size, data_offset, data_size = struct.unpack_from("<IIII", raw, 8)
+                if sanity == 0xFAB11BAF and literal_size % 8 == 0:
+                    table_end = literal_offset + literal_size
+                    data_end = data_offset + data_size
+                    if table_end <= len(raw) and data_end <= len(raw):
+                        for index in range(literal_size // 8):
+                            length, data_index = struct.unpack_from("<II", raw, literal_offset + index * 8)
+                            start, end = data_offset + data_index, data_offset + data_index + length
+                            if length <= 512 and start >= data_offset and end <= data_end:
+                                try:
+                                    value = raw[start:end].decode("utf-8", "strict").strip()
+                                except UnicodeDecodeError:
+                                    continue
+                                if native_candidate(value):
+                                    key = (value, info.filename, "il2cpp-literal")
+                                    candidates.setdefault(key, {"text":value,"source":info.filename,
+                                        "encoding":"il2cpp-literal","offset":literal_offset + index * 8,
+                                        "literal_index":index,"metadata_version":version})
+            except (struct.error, ValueError):
+                pass
         patterns = (("ascii", re.compile(rb"[\x20-\x7e]{3,180}")),
                     ("utf16le", re.compile(rb"(?:[\x20-\x7e]\x00){3,180}")))
         for encoding, pattern in patterns:
