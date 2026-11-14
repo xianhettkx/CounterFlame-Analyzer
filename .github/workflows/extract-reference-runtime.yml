@@ -81,7 +81,7 @@ jobs:
           if not path.exists():
               raise SystemExit("Main app executable was not extracted")
           data = path.read_bytes()
-          if data[:4] != b"\\xcf\\xfa\\xed\\xfe":
+          if data[:4] != b"\xcf\xfa\xed\xfe":
               raise SystemExit(f"Unsupported main executable Mach-O magic: {data[:4].hex()}")
           header = struct.unpack_from("<IiiIIIII", data, 0)
           ncmds, offset = header[4], 32
@@ -91,7 +91,7 @@ jobs:
               cmd, cmdsize = struct.unpack_from("<II", data, offset)
               if cmd in dylib_cmds and cmdsize >= 24:
                   nameoff = struct.unpack_from("<I", data, offset+8)[0]
-                  raw = data[offset+nameoff:offset+cmdsize].split(b"\\0",1)[0]
+                  raw = data[offset+nameoff:offset+cmdsize].split(b"\0",1)[0]
                   found.append({"command":dylib_cmds[cmd],"name":raw.decode("utf-8","replace")})
               offset += cmdsize
           report = {"scope":"Static Mach-O load-command inspection only; no code execution.","main_executable_bytes":len(data),"load_commands":found,"reference_inventory_dylib_loaded_by_main_executable":any(x["name"].endswith("CounterFlameKAlert551.dylib") for x in found)}
