@@ -1,4 +1,12 @@
 test_manifest_has_six_complete_local_mappings (test_local_skin_mapping.LocalSkinManifestTests.test_manifest_has_six_complete_local_mappings) ... ok
+test_blocked_source_does_not_write_asset (test_mesh_swap_plan.ApplyGateTests.test_blocked_source_does_not_write_asset) ... ok
+test_decide_apply_blocked_source_collects_reasons (test_mesh_swap_plan.ApplyGateTests.test_decide_apply_blocked_source_collects_reasons) ... ok
+test_decide_apply_eligible_static_pair (test_mesh_swap_plan.ApplyGateTests.test_decide_apply_eligible_static_pair) ... ok
+test_decide_apply_skinned_pair_not_promoted_to_eligible (test_mesh_swap_plan.ApplyGateTests.test_decide_apply_skinned_pair_not_promoted_to_eligible) ... ok
+test_eligible_pair_writes_asset_atomically (test_mesh_swap_plan.ApplyGateTests.test_eligible_pair_writes_asset_atomically) ... ok
+test_mesh_is_the_only_changed_reference (test_mesh_swap_plan.ApplyGateTests.test_mesh_is_the_only_changed_reference) ... ok
+test_needs_runtime_verification_does_not_write_asset (test_mesh_swap_plan.ApplyGateTests.test_needs_runtime_verification_does_not_write_asset) ... ok
+test_reference_drift_aborts_before_write (test_mesh_swap_plan.ApplyGateTests.test_reference_drift_aborts_before_write) ... ok
 test_bone_count_mismatch_blocks (test_mesh_swap_plan.MeshSwapPlanTests.test_bone_count_mismatch_blocks) ... ok
 test_decode_failure_is_blocked_not_force_swapped (test_mesh_swap_plan.MeshSwapPlanTests.test_decode_failure_is_blocked_not_force_swapped) ... ok
 test_matching_skinned_pair_needs_runtime_verification (test_mesh_swap_plan.MeshSwapPlanTests.test_matching_skinned_pair_needs_runtime_verification) ... ok
@@ -11,6 +19,11 @@ test_skinned_record_without_decoded_weights_is_blocked (test_mesh_swap_plan.Mesh
 test_source_without_skin_weights_blocked_for_skinned_target (test_mesh_swap_plan.MeshSwapPlanTests.test_source_without_skin_weights_blocked_for_skinned_target) ... ok
 test_static_clean_record_is_reference_review_eligible (test_mesh_swap_plan.MeshSwapPlanTests.test_static_clean_record_is_reference_review_eligible) ... ok
 test_static_filter_pair_is_reference_swap_eligible (test_mesh_swap_plan.MeshSwapPlanTests.test_static_filter_pair_is_reference_swap_eligible) ... ok
+test_animator_controller_mutation_is_detected (test_mesh_swap_plan.ReferenceGuardTests.test_animator_controller_mutation_is_detected) ... ok
+test_atomic_write_replaces_without_temp_left (test_mesh_swap_plan.ReferenceGuardTests.test_atomic_write_replaces_without_temp_left) ... ok
+test_bone_mutation_is_detected (test_mesh_swap_plan.ReferenceGuardTests.test_bone_mutation_is_detected) ... ok
+test_identical_snapshots_pass (test_mesh_swap_plan.ReferenceGuardTests.test_identical_snapshots_pass) ... ok
+test_material_mutation_is_detected (test_mesh_swap_plan.ReferenceGuardTests.test_material_mutation_is_detected) ... ok
 test_animator_controller_snapshot_roundtrip (test_mesh_swap_plan.ReferenceSnapshotTests.test_animator_controller_snapshot_roundtrip) ... ok
 test_bone_mutation_is_detected_as_reference_drift (test_mesh_swap_plan.ReferenceSnapshotTests.test_bone_mutation_is_detected_as_reference_drift) ... ok
 test_snapshot_captures_gameobject_bones_root_materials (test_mesh_swap_plan.ReferenceSnapshotTests.test_snapshot_captures_gameobject_bones_root_materials) ... ok
@@ -21,6 +34,6 @@ test_selects_target_bundle_paths_after_runtime_prefix (test_scanner.ScannerTests
 test_unknown_bundle_header_is_not_misidentified (test_scanner.ScannerTests.test_unknown_bundle_header_is_not_misidentified) ... ok
 
 ----------------------------------------------------------------------
-Ran 21 tests in 0.060s
+Ran 34 tests in 0.056s
 
 OK
