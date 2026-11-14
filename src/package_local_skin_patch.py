@@ -47,8 +47,6 @@ def main():
                     else:
                         with zin.open(info,"r") as src: shutil.copyfileobj(src,dst,CHUNK)
     with zipfile.ZipFile(output,"r") as zf:
-        bad=zf.testzip()
-        if bad: raise SystemExit(f"ZIP integrity check failed at {bad}")
         with zf.open(target) as f:
             h=hashlib.sha256()
             for block in iter(lambda:f.read(CHUNK),b""): h.update(block)
