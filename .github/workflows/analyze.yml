@@ -71,6 +71,7 @@ jobs:
           python src/unity_full_bundle_index.py input.ipa --out reports
           python src/unity_model_graph.py input.ipa --out reports
           python src/unity_rig_animation_map.py input.ipa --out reports
+          python src/unity_skin_weight_audit.py input.ipa --out reports
           python src/unity_target_asset_export.py input.ipa --reports reports --out reports/exported
 
       - name: Upload analysis reports
