@@ -52,10 +52,15 @@ jobs:
       - name: Audit local material and texture replacement paths
         run: python src/unity_local_skin_patch.py input.ipa --out reports/local_skin_patch
 
+      - name: Apply verified local texture overrides
+        run: python src/unity_local_skin_patch.py input.ipa --out reports/local_skin_patch_applied --apply
+
       - name: Upload local skin patch audit
         uses: actions/upload-artifact@v4
         with:
           name: counterflame-local-skin-patch-audit
-          path: reports/local_skin_patch/
+          path: |
+            reports/local_skin_patch/
+            reports/local_skin_patch_applied/
           if-no-files-found: error
           retention-days: 14
