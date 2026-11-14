@@ -36,7 +36,7 @@ jobs:
       - name: Extract inventory runtime evidence
         run: |
           python - <<'PY'
-          import zipfile, pathlib, json, hashlib
+          import zipfile, pathlib, json, hashlib, plistlib
           z = zipfile.ZipFile("reference.ipa")
           names = z.namelist()
           app_root = "Payload/CounterFlame.app/"
@@ -57,10 +57,46 @@ jobs:
               data = z.read(hits[0])
               (out / label).write_bytes(data)
               report["files"][label] = {"ipa_path":hits[0],"size":len(data),"sha256":hashlib.sha256(data).hexdigest()}
+          plist = plistlib.loads(z.read(app_root + "Info.plist"))
+          executable = plist.get("CFBundleExecutable")
+          if executable:
+              exe_path = app_root + executable
+              if exe_path in names:
+                  exe_data = z.read(exe_path)
+                  (out/"CounterFlame").write_bytes(exe_data)
+                  report["files"]["MainExecutable"] = {"ipa_path":exe_path,"size":len(exe_data),"sha256":hashlib.sha256(exe_data).hexdigest(),"bundle_executable":executable}
+              else:
+                  report["files"]["MainExecutable"] = {"status":"not_found","bundle_executable":executable}
           (out/"manifest.json").write_text(json.dumps(report,indent=2),encoding="utf-8")
           print(json.dumps(report,indent=2))
           if report["files"]["CounterFlameKAlert551.dylib"].get("status") == "not_found":
               raise SystemExit("Reference inventory dylib missing")
+          PY
+      - name: Inspect Mach-O dynamic library load commands
+        run: |
+          python - <<'PY'
+          import struct, json, pathlib
+          root = pathlib.Path("runtime-evidence")
+          path = root / "CounterFlame"
+          if not path.exists():
+              raise SystemExit("Main app executable was not extracted")
+          data = path.read_bytes()
+          if data[:4] != b"\\xcf\\xfa\\xed\\xfe":
+              raise SystemExit(f"Unsupported main executable Mach-O magic: {data[:4].hex()}")
+          header = struct.unpack_from("<IiiIIIII", data, 0)
+          ncmds, offset = header[4], 32
+          dylib_cmds = {0xc:"LC_LOAD_DYLIB",0x80000018:"LC_LOAD_WEAK_DYLIB",0x8000001f:"LC_REEXPORT_DYLIB",0x80000023:"LC_LOAD_UPWARD_DYLIB"}
+          found = []
+          for _ in range(ncmds):
+              cmd, cmdsize = struct.unpack_from("<II", data, offset)
+              if cmd in dylib_cmds and cmdsize >= 24:
+                  nameoff = struct.unpack_from("<I", data, offset+8)[0]
+                  raw = data[offset+nameoff:offset+cmdsize].split(b"\\0",1)[0]
+                  found.append({"command":dylib_cmds[cmd],"name":raw.decode("utf-8","replace")})
+              offset += cmdsize
+          report = {"scope":"Static Mach-O load-command inspection only; no code execution.","main_executable_bytes":len(data),"load_commands":found,"reference_inventory_dylib_loaded_by_main_executable":any(x["name"].endswith("CounterFlameKAlert551.dylib") for x in found)}
+          (root/"macho-load-commands.json").write_text(json.dumps(report,indent=2),encoding="utf-8")
+          print(json.dumps(report,indent=2))
           PY
       - name: Produce local-inventory symbol triage
         run: |
