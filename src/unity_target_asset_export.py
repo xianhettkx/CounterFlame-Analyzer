@@ -108,7 +108,7 @@ def run(ipa: Path, reports: Path, out: Path) -> dict[str, Any]:
         texture_name=f"{safe_name(spec['texture'])}.png"
         texture_target=skin_dir/texture_name
         shutil.copy2(texture_source,texture_target)
-        mtl_text="newmtl SkinAlbedo\\nKa 0.15 0.15 0.15\\nKd 1.0 1.0 1.0\\nKs 0.15 0.15 0.15\\nNs 32.0\\nd 1.0\\nillum 2\\nmap_Kd "+texture_name+"\\n"
+        mtl_text="newmtl SkinAlbedo\nKa 0.15 0.15 0.15\nKd 1.0 1.0 1.0\nKs 0.15 0.15 0.15\nNs 32.0\nd 1.0\nillum 2\nmap_Kd "+texture_name+"\n"
         (skin_dir/mtl_name).write_text(mtl_text,encoding="utf-8")
         source_text=source_obj.read_text(encoding="utf-8",errors="replace")
         lines=source_text.splitlines()
@@ -117,7 +117,7 @@ def run(ipa: Path, reports: Path, out: Path) -> dict[str, Any]:
             decorated.append(line)
             if line.startswith("g ") or line.startswith("o "):
                 decorated.append("usemtl SkinAlbedo")
-        (skin_dir/obj_name).write_text("\\n".join(decorated)+"\\n",encoding="utf-8")
+        (skin_dir/obj_name).write_text("\n".join(decorated)+"\n",encoding="utf-8")
         manifest["skin_previews"].append({"skin_key":skin,"mesh_name":mesh_entry["mesh_name"],"mesh_path_id":spec["mesh_id"],"texture_name":spec["texture"],"obj":str(Path("skin_previews")/safe_name(skin)/obj_name),"mtl":str(Path("skin_previews")/safe_name(skin)/mtl_name),"texture":str(Path("skin_previews")/safe_name(skin)/texture_name),"note":"Static UV-textured preview only; no skeleton weights or animation."})
     preview_readme="""# Six-skin static 3D previews
 
