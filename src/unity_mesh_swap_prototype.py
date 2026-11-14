@@ -261,17 +261,17 @@ def plan_cross_swaps(records: list[MeshModelRecord]) -> list[dict[str, Any]]:
                     continue
                 plan: SwapPlan = evaluate_swap(source, target)
                 plans.append({
-                    "skin_key": source.skin_key,
-                    "source_mesh_path_id": source.mesh_path_id,
-                    "source_mesh_name": source.mesh_name,
-                    "source_side": source.side,
-                    "target_mesh_path_id": target.mesh_path_id,
-                    "target_mesh_name": target.mesh_name,
-                    "target_side": target.side,
-                    "status": plan.status,
-                    "checks": [vars(c) for c in plan.checks],
-                    "preserved_references": list(plan.preserved_references),
-                })
+                "skin_key": source.skin_key,
+                "source_mesh_path_id": source.mesh_path_id,
+                "source_mesh_name": source.mesh_name,
+                "source_side": source.side,
+                "target_mesh_path_id": target.mesh_path_id,
+                "target_mesh_name": target.mesh_name,
+                "target_side": target.side,
+                "status": plan.status,
+                "checks": [vars(c) for c in plan.checks],
+                "preserved_references": list(plan.preserved_references),
+            })
     return plans
 
 
