@@ -1,5 +1,5 @@
 name: Audit Skin Runtime Component Links
-# Re-run after correcting the component audit parser
+# Run serialized renderer and material linkage audit on current parser
 
 on:
   push:
