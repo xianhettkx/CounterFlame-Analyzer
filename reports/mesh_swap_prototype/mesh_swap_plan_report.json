@@ -716,7 +716,7 @@
     "No final IPA is produced and no on-device display success is claimed."
   ],
   "note": "Remote mirror: 15 records, 10 skipped, 20 plans, gate policy preserved. Per-record notes/full check detail are in the local deliverable copy.",
-  "audit_status": "STALE_REQUIRES_RERUN",
+  "audit_status": "HISTORICAL_15_RECORD_SNAPSHOT_SUPERSEDED",
   "audit_staleness": {
     "reason": "This report predates the temp-directory lifetime fix. The earlier MeshHandler FileNotFoundError may have been caused by extracted .resS/.resource files being deleted before lazy mesh decoding; do not treat those geometry decode failures as final findings.",
     "fixed_in_commit": "0d707f0a3ba20c761e1459ef01692e69f9ea4463",
@@ -736,5 +736,25 @@
       "Keep extracted resources.assets.resS/resources.resource alive while UnityPy lazily decodes meshes",
       "Atomic replace failure preserves pre-existing output bytes"
     ]
+  },
+  "historical_snapshot_note": "This 15-record JSON predates the expanded 30-record candidate audit and is retained only for provenance. See latest_audit_summary.md and the workflow artifact for current findings.",
+  "latest_audit": {
+    "workflow_run_id": 43617801782,
+    "workflow_url": "https://github.com/xianhettkx/CounterFlame-Analyzer/actions/runs/43617801782",
+    "artifact_id": 14123035162,
+    "artifact_name": "counterflame-mesh-swap-prototype-audit",
+    "tested_commit": "069eb347ef9a24421f8afceed30938a3e87965a6",
+    "original_ipa_sha256": "6c3e740ca379c5daf55f635e1228414230ca4acb7608cd7b35e7f5c0e0d952d3",
+    "mesh_records": 30,
+    "candidate_plans": 62,
+    "writable_plans": 0,
+    "blocked_plans": 62,
+    "readiness": {
+      "blocked": 22,
+      "eligible_for_reference_review": 7,
+      "needs_runtime_verification": 1
+    },
+    "mode": "audit_only",
+    "conclusion": "No safe reference-swap pair found; do not generate a replacement IPA."
   }
 }
