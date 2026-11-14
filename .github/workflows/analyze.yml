@@ -70,6 +70,7 @@ jobs:
           python src/unity_asset_inspector.py input.ipa --out reports --targets config/target_skins.json
           python src/unity_full_bundle_index.py input.ipa --out reports
           python src/unity_model_graph.py input.ipa --out reports
+          python src/unity_rig_animation_map.py input.ipa --out reports
           python src/unity_target_asset_export.py input.ipa --reports reports --out reports/exported
 
       - name: Upload analysis reports
