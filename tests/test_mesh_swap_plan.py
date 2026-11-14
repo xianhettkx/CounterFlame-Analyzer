@@ -118,6 +118,15 @@ class MeshSwapPlanTests(unittest.TestCase):
         self.assertEqual(plan.status, "blocked")
         self.assertTrue(any(c.check == "renderer_family" and not c.passed for c in plan.checks))
 
+    def test_first_person_mesh_cannot_be_paired_with_third_person_renderer(self):
+        source = glove(2215, 99, 99)
+        target = glove(2115, 99, 99)
+        source.side = "first_person"
+        target.side = "third_person"
+        plan = evaluate_swap(source, target)
+        self.assertEqual(plan.status, "blocked")
+        self.assertTrue(any(c.check == "renderer_side_match" and not c.passed for c in plan.checks))
+
     def test_static_filter_pair_is_reference_swap_eligible(self):
         plan = evaluate_swap(static_filter(2048), static_filter(2053))
         self.assertEqual(plan.status, "reference_swap_eligible")
