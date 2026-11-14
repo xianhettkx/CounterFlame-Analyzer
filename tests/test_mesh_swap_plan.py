@@ -40,6 +40,8 @@ def glove(pid, bones, bind, weights=10050, materials=("glove_specialist_left", "
         root_bone_name="v_weapon.Bip01_L_Forearm",
         material_names=list(materials),
         mesh_is_readable=True,
+        renderer_bone_names=[f"bone_{i}" for i in range(bones)],
+        bind_pose_signature=f"bindpose-signature-{bind}",
     )
 
 
@@ -143,6 +145,16 @@ class MeshSwapPlanTests(unittest.TestCase):
         target.bind_pose_signature = "target-matrix-hash"
         plan = evaluate_swap(source, target)
         self.assertEqual(plan.status, "blocked")
+        self.assertTrue(any(c.check == "bindpose_data_match" and not c.passed for c in plan.checks))
+
+    def test_skinned_pair_with_unavailable_skeleton_signatures_is_blocked(self):
+        source = glove(2000, 67, 67)
+        target = glove(2217, 67, 67)
+        target.renderer_bone_names = []
+        target.bind_pose_signature = ""
+        plan = evaluate_swap(source, target)
+        self.assertEqual(plan.status, "blocked")
+        self.assertTrue(any(c.check == "bone_order_match" and not c.passed for c in plan.checks))
         self.assertTrue(any(c.check == "bindpose_data_match" and not c.passed for c in plan.checks))
 
     def test_static_filter_pair_is_reference_swap_eligible(self):
