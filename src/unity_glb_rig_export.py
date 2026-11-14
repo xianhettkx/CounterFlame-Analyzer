@@ -371,7 +371,6 @@ def export(ipa:Path, reports:Path, out:Path):
     target_dir.mkdir(parents=True,exist_ok=True)
     glb_path=target_dir/"specialist_pillow_rigged.glb"
     builder.write(glb_path,doc)
-    temp.cleanup()
     report={
         "skin_key":SKIN_KEY,
         "mesh_name":str(val(mesh,"m_Name","") or ""),
@@ -439,6 +438,7 @@ def export(ipa:Path, reports:Path, out:Path):
         for path in out.rglob("*"):
             if path.is_file() and path!=archive:
                 z.write(path,path.relative_to(out).as_posix())
+    temp.cleanup()
     print(f"[OK] Rigged GLB: {glb_path} ({glb_path.stat().st_size} bytes)")
     print(f"[OK] Bones={len(bone_ids)} vertices={len(vertices)} weights={len(weights)} bindposes={len(bindposes)}")
     return report
