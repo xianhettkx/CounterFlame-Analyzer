@@ -74,6 +74,7 @@ jobs:
           python src/unity_skin_weight_audit.py input.ipa --out reports
           python src/unity_target_asset_export.py input.ipa --reports reports --out reports/exported
           python src/unity_glb_rig_export.py input.ipa --reports reports --out reports/exported
+          python src/unity_local_skin_patch.py input.ipa --out reports/local_skin_patch
 
       - name: Upload analysis reports
         if: always()
