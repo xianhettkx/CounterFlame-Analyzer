@@ -1,65 +1,719 @@
 {
  "mode": "audit_only",
  "applied": false,
- "safety": {"server_inventory_modified": false, "account_entitlements_modified": false, "network_or_anticheat_modified": false, "runtime_injection": false, "texture_payload_replaced": false},
+ "safety": {
+  "server_inventory_modified": false,
+  "account_entitlements_modified": false,
+  "network_or_anticheat_modified": false,
+  "runtime_injection": false,
+  "texture_payload_replaced": false
+ },
  "records": [
-  {"mesh_path_id": 2233, "mesh_name": "v_knife_t_v_knife_flip_reference", "renderer_type": "SkinnedMeshRenderer", "skin_key": "butterfly_marblefade", "side": "first_person", "vertex_count": 3059, "weight_entries": 0, "renderer_bone_count": 56, "bind_pose_count": 56, "submesh_count": 1, "root_bone_name": "", "material_names": ["knife_flip"], "mesh_is_readable": false},
-  {"mesh_path_id": 2048, "mesh_name": "tps_Butterfly", "renderer_type": "MeshFilter", "skin_key": "butterfly_marblefade", "side": "third_person", "vertex_count": 0, "weight_entries": 0, "renderer_bone_count": 0, "bind_pose_count": 0, "submesh_count": 1, "root_bone_name": "", "material_names": ["butterfly_vanilla_tps_Diffuse"], "mesh_is_readable": false},
-  {"mesh_path_id": 2000, "mesh_name": "v_glove_ct_specialist", "renderer_type": "SkinnedMeshRenderer", "skin_key": "specialist_pillow", "side": "first_person", "vertex_count": 10050, "weight_entries": 10050, "renderer_bone_count": 67, "bind_pose_count": 67, "submesh_count": 3, "root_bone_name": "arm_lower_l", "material_names": ["default_handwrap_barearms_PBR", "glove_specialist_right", "glove_specialist_left"], "mesh_is_readable": false},
-  {"mesh_path_id": 2215, "mesh_name": "v_glove_ct_specialist", "renderer_type": "SkinnedMeshRenderer", "skin_key": "specialist_pillow", "side": "first_person", "vertex_count": 5314, "weight_entries": 5314, "renderer_bone_count": 99, "bind_pose_count": 99, "submesh_count": 3, "root_bone_name": "v_weapon.Bip01_L_Forearm", "material_names": ["default_handwrap_barearms_PBR", "glove_specialist_right", "glove_specialist_left"], "mesh_is_readable": false},
-  {"mesh_path_id": 2216, "mesh_name": "v_glove_ct_specialist", "renderer_type": "SkinnedMeshRenderer", "skin_key": "specialist_pillow", "side": "first_person", "vertex_count": 10050, "weight_entries": 10050, "renderer_bone_count": 50, "bind_pose_count": 50, "submesh_count": 3, "root_bone_name": "knife_tip", "material_names": ["bare_arm_133", "glove_specialist_right", "glove_specialist_left"], "mesh_is_readable": false},
-  {"mesh_path_id": 2217, "mesh_name": "v_glove_ct_specialist", "renderer_type": "SkinnedMeshRenderer", "skin_key": "specialist_pillow", "side": "first_person", "vertex_count": 10050, "weight_entries": 10050, "renderer_bone_count": 67, "bind_pose_count": 67, "submesh_count": 3, "root_bone_name": "v_weapon.Bip01_L_Forearm", "material_names": ["default_handwrap_barearms_PBR", "glove_specialist_right", "glove_specialist_left"], "mesh_is_readable": false},
-  {"mesh_path_id": 2115, "mesh_name": "v_glove_ct_specialist_ct", "renderer_type": "SkinnedMeshRenderer", "skin_key": "specialist_pillow", "side": "third_person", "vertex_count": 6690, "weight_entries": 6690, "renderer_bone_count": 99, "bind_pose_count": 99, "submesh_count": 3, "root_bone_name": "v_weapon.Bip01_L_Forearm", "material_names": ["cthand", "glove_specialist_right", "glove_specialist_left"], "mesh_is_readable": false},
-  {"mesh_path_id": 2114, "mesh_name": "v_snip_awp_awp_model", "renderer_type": "SkinnedMeshRenderer", "skin_key": "awp_dragonlore", "side": "first_person", "vertex_count": 20864, "weight_entries": 0, "renderer_bone_count": 57, "bind_pose_count": 57, "submesh_count": 2, "root_bone_name": "v_weapon.Bip01_R_Forearm", "material_names": ["awp", "awpScope"], "mesh_is_readable": false},
-  {"mesh_path_id": 1980, "mesh_name": "w_snip_awp", "renderer_type": "MeshFilter", "skin_key": "awp_dragonlore", "side": "third_person", "vertex_count": 0, "weight_entries": 0, "renderer_bone_count": 0, "bind_pose_count": 94, "submesh_count": 2, "root_bone_name": "", "material_names": ["awp_pbr", "scope_lens"], "mesh_is_readable": false},
-  {"mesh_path_id": 2231, "mesh_name": "v_rif_ak47_reference1", "renderer_type": "SkinnedMeshRenderer", "skin_key": "ak47_neonrevolution", "side": "first_person", "vertex_count": 7448, "weight_entries": 0, "renderer_bone_count": 56, "bind_pose_count": 56, "submesh_count": 1, "root_bone_name": "v_weapon.Bip01_R_Forearm", "material_names": ["ak47_default_PBR"], "mesh_is_readable": false},
-  {"mesh_path_id": 2043, "mesh_name": "tps_AK47", "renderer_type": "MeshFilter", "skin_key": "ak47_neonrevolution", "side": "third_person", "vertex_count": 0, "weight_entries": 0, "renderer_bone_count": 0, "bind_pose_count": 0, "submesh_count": 1, "root_bone_name": "", "material_names": ["agent_ak47_default_tps_Diffuse"], "mesh_is_readable": false},
-  {"mesh_path_id": 1926, "mesh_name": "v_rif_m4a1_reference1", "renderer_type": "SkinnedMeshRenderer", "skin_key": "m4a4_emperor", "side": "first_person", "vertex_count": 4060, "weight_entries": 0, "renderer_bone_count": 43, "bind_pose_count": 43, "submesh_count": 1, "root_bone_name": "", "material_names": ["m4a4"], "mesh_is_readable": false},
-  {"mesh_path_id": 2062, "mesh_name": "tps_M4A402100", "renderer_type": "MeshFilter", "skin_key": "m4a4_emperor", "side": "third_person", "vertex_count": 0, "weight_entries": 0, "renderer_bone_count": 0, "bind_pose_count": 0, "submesh_count": 1, "root_bone_name": "", "material_names": ["agent_m4a4_Diffuse"], "mesh_is_readable": false},
-  {"mesh_path_id": 2112, "mesh_name": "v_pist_deagle_deagle_model", "renderer_type": "SkinnedMeshRenderer", "skin_key": "deagle_codered", "side": "first_person", "vertex_count": 10315, "weight_entries": 0, "renderer_bone_count": 57, "bind_pose_count": 57, "submesh_count": 1, "root_bone_name": "v_weapon.Bip01_R_Forearm", "material_names": ["pist_deagle"], "mesh_is_readable": false},
-  {"mesh_path_id": 2050, "mesh_name": "tps_Deagle00400", "renderer_type": "MeshFilter", "skin_key": "deagle_codered", "side": "third_person", "vertex_count": 0, "weight_entries": 0, "renderer_bone_count": 0, "bind_pose_count": 0, "submesh_count": 1, "root_bone_name": "", "material_names": ["pist_deagle_Diffuse"], "mesh_is_readable": false}
+  {
+   "mesh_path_id": 2233,
+   "mesh_name": "v_knife_t_v_knife_flip_reference",
+   "renderer_type": "SkinnedMeshRenderer",
+   "skin_key": "butterfly_marblefade",
+   "side": "first_person",
+   "vertex_count": 3059,
+   "weight_entries": 0,
+   "renderer_bone_count": 56,
+   "bind_pose_count": 56,
+   "submesh_count": 1,
+   "root_bone_name": "",
+   "material_names": [
+    "knife_flip"
+   ],
+   "mesh_is_readable": false
+  },
+  {
+   "mesh_path_id": 2048,
+   "mesh_name": "tps_Butterfly",
+   "renderer_type": "MeshFilter",
+   "skin_key": "butterfly_marblefade",
+   "side": "third_person",
+   "vertex_count": 0,
+   "weight_entries": 0,
+   "renderer_bone_count": 0,
+   "bind_pose_count": 0,
+   "submesh_count": 1,
+   "root_bone_name": "",
+   "material_names": [
+    "butterfly_vanilla_tps_Diffuse"
+   ],
+   "mesh_is_readable": false
+  },
+  {
+   "mesh_path_id": 2000,
+   "mesh_name": "v_glove_ct_specialist",
+   "renderer_type": "SkinnedMeshRenderer",
+   "skin_key": "specialist_pillow",
+   "side": "first_person",
+   "vertex_count": 10050,
+   "weight_entries": 10050,
+   "renderer_bone_count": 67,
+   "bind_pose_count": 67,
+   "submesh_count": 3,
+   "root_bone_name": "arm_lower_l",
+   "material_names": [
+    "default_handwrap_barearms_PBR",
+    "glove_specialist_right",
+    "glove_specialist_left"
+   ],
+   "mesh_is_readable": false
+  },
+  {
+   "mesh_path_id": 2215,
+   "mesh_name": "v_glove_ct_specialist",
+   "renderer_type": "SkinnedMeshRenderer",
+   "skin_key": "specialist_pillow",
+   "side": "first_person",
+   "vertex_count": 5314,
+   "weight_entries": 5314,
+   "renderer_bone_count": 99,
+   "bind_pose_count": 99,
+   "submesh_count": 3,
+   "root_bone_name": "v_weapon.Bip01_L_Forearm",
+   "material_names": [
+    "default_handwrap_barearms_PBR",
+    "glove_specialist_right",
+    "glove_specialist_left"
+   ],
+   "mesh_is_readable": false
+  },
+  {
+   "mesh_path_id": 2216,
+   "mesh_name": "v_glove_ct_specialist",
+   "renderer_type": "SkinnedMeshRenderer",
+   "skin_key": "specialist_pillow",
+   "side": "first_person",
+   "vertex_count": 10050,
+   "weight_entries": 10050,
+   "renderer_bone_count": 50,
+   "bind_pose_count": 50,
+   "submesh_count": 3,
+   "root_bone_name": "knife_tip",
+   "material_names": [
+    "bare_arm_133",
+    "glove_specialist_right",
+    "glove_specialist_left"
+   ],
+   "mesh_is_readable": false
+  },
+  {
+   "mesh_path_id": 2217,
+   "mesh_name": "v_glove_ct_specialist",
+   "renderer_type": "SkinnedMeshRenderer",
+   "skin_key": "specialist_pillow",
+   "side": "first_person",
+   "vertex_count": 10050,
+   "weight_entries": 10050,
+   "renderer_bone_count": 67,
+   "bind_pose_count": 67,
+   "submesh_count": 3,
+   "root_bone_name": "v_weapon.Bip01_L_Forearm",
+   "material_names": [
+    "default_handwrap_barearms_PBR",
+    "glove_specialist_right",
+    "glove_specialist_left"
+   ],
+   "mesh_is_readable": false
+  },
+  {
+   "mesh_path_id": 2115,
+   "mesh_name": "v_glove_ct_specialist_ct",
+   "renderer_type": "SkinnedMeshRenderer",
+   "skin_key": "specialist_pillow",
+   "side": "third_person",
+   "vertex_count": 6690,
+   "weight_entries": 6690,
+   "renderer_bone_count": 99,
+   "bind_pose_count": 99,
+   "submesh_count": 3,
+   "root_bone_name": "v_weapon.Bip01_L_Forearm",
+   "material_names": [
+    "cthand",
+    "glove_specialist_right",
+    "glove_specialist_left"
+   ],
+   "mesh_is_readable": false
+  },
+  {
+   "mesh_path_id": 2114,
+   "mesh_name": "v_snip_awp_awp_model",
+   "renderer_type": "SkinnedMeshRenderer",
+   "skin_key": "awp_dragonlore",
+   "side": "first_person",
+   "vertex_count": 20864,
+   "weight_entries": 0,
+   "renderer_bone_count": 57,
+   "bind_pose_count": 57,
+   "submesh_count": 2,
+   "root_bone_name": "v_weapon.Bip01_R_Forearm",
+   "material_names": [
+    "awp",
+    "awpScope"
+   ],
+   "mesh_is_readable": false
+  },
+  {
+   "mesh_path_id": 1980,
+   "mesh_name": "w_snip_awp",
+   "renderer_type": "MeshFilter",
+   "skin_key": "awp_dragonlore",
+   "side": "third_person",
+   "vertex_count": 0,
+   "weight_entries": 0,
+   "renderer_bone_count": 0,
+   "bind_pose_count": 94,
+   "submesh_count": 2,
+   "root_bone_name": "",
+   "material_names": [
+    "awp_pbr",
+    "scope_lens"
+   ],
+   "mesh_is_readable": false
+  },
+  {
+   "mesh_path_id": 2231,
+   "mesh_name": "v_rif_ak47_reference1",
+   "renderer_type": "SkinnedMeshRenderer",
+   "skin_key": "ak47_neonrevolution",
+   "side": "first_person",
+   "vertex_count": 7448,
+   "weight_entries": 0,
+   "renderer_bone_count": 56,
+   "bind_pose_count": 56,
+   "submesh_count": 1,
+   "root_bone_name": "v_weapon.Bip01_R_Forearm",
+   "material_names": [
+    "ak47_default_PBR"
+   ],
+   "mesh_is_readable": false
+  },
+  {
+   "mesh_path_id": 2043,
+   "mesh_name": "tps_AK47",
+   "renderer_type": "MeshFilter",
+   "skin_key": "ak47_neonrevolution",
+   "side": "third_person",
+   "vertex_count": 0,
+   "weight_entries": 0,
+   "renderer_bone_count": 0,
+   "bind_pose_count": 0,
+   "submesh_count": 1,
+   "root_bone_name": "",
+   "material_names": [
+    "agent_ak47_default_tps_Diffuse"
+   ],
+   "mesh_is_readable": false
+  },
+  {
+   "mesh_path_id": 1926,
+   "mesh_name": "v_rif_m4a1_reference1",
+   "renderer_type": "SkinnedMeshRenderer",
+   "skin_key": "m4a4_emperor",
+   "side": "first_person",
+   "vertex_count": 4060,
+   "weight_entries": 0,
+   "renderer_bone_count": 43,
+   "bind_pose_count": 43,
+   "submesh_count": 1,
+   "root_bone_name": "",
+   "material_names": [
+    "m4a4"
+   ],
+   "mesh_is_readable": false
+  },
+  {
+   "mesh_path_id": 2062,
+   "mesh_name": "tps_M4A402100",
+   "renderer_type": "MeshFilter",
+   "skin_key": "m4a4_emperor",
+   "side": "third_person",
+   "vertex_count": 0,
+   "weight_entries": 0,
+   "renderer_bone_count": 0,
+   "bind_pose_count": 0,
+   "submesh_count": 1,
+   "root_bone_name": "",
+   "material_names": [
+    "agent_m4a4_Diffuse"
+   ],
+   "mesh_is_readable": false
+  },
+  {
+   "mesh_path_id": 2112,
+   "mesh_name": "v_pist_deagle_deagle_model",
+   "renderer_type": "SkinnedMeshRenderer",
+   "skin_key": "deagle_codered",
+   "side": "first_person",
+   "vertex_count": 10315,
+   "weight_entries": 0,
+   "renderer_bone_count": 57,
+   "bind_pose_count": 57,
+   "submesh_count": 1,
+   "root_bone_name": "v_weapon.Bip01_R_Forearm",
+   "material_names": [
+    "pist_deagle"
+   ],
+   "mesh_is_readable": false
+  },
+  {
+   "mesh_path_id": 2050,
+   "mesh_name": "tps_Deagle00400",
+   "renderer_type": "MeshFilter",
+   "skin_key": "deagle_codered",
+   "side": "third_person",
+   "vertex_count": 0,
+   "weight_entries": 0,
+   "renderer_bone_count": 0,
+   "bind_pose_count": 0,
+   "submesh_count": 1,
+   "root_bone_name": "",
+   "material_names": [
+    "pist_deagle_Diffuse"
+   ],
+   "mesh_is_readable": false
+  }
  ],
  "readiness": [
-  {"mesh_path_id": 2233, "skin_key": "butterfly_marblefade", "side": "first_person", "mesh_name": "v_knife_t_v_knife_flip_reference", "renderer_type": "SkinnedMeshRenderer", "status": "blocked", "reasons": ["skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"]},
-  {"mesh_path_id": 2048, "skin_key": "butterfly_marblefade", "side": "third_person", "mesh_name": "tps_Butterfly", "renderer_type": "MeshFilter", "status": "blocked", "reasons": ["geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"]},
-  {"mesh_path_id": 2000, "skin_key": "specialist_pillow", "side": "first_person", "mesh_name": "v_glove_ct_specialist", "renderer_type": "SkinnedMeshRenderer", "status": "needs_runtime_verification", "reasons": []},
-  {"mesh_path_id": 2215, "skin_key": "specialist_pillow", "side": "first_person", "mesh_name": "v_glove_ct_specialist", "renderer_type": "SkinnedMeshRenderer", "status": "needs_runtime_verification", "reasons": []},
-  {"mesh_path_id": 2216, "skin_key": "specialist_pillow", "side": "first_person", "mesh_name": "v_glove_ct_specialist", "renderer_type": "SkinnedMeshRenderer", "status": "needs_runtime_verification", "reasons": []},
-  {"mesh_path_id": 2217, "skin_key": "specialist_pillow", "side": "first_person", "mesh_name": "v_glove_ct_specialist", "renderer_type": "SkinnedMeshRenderer", "status": "needs_runtime_verification", "reasons": []},
-  {"mesh_path_id": 2115, "skin_key": "specialist_pillow", "side": "third_person", "mesh_name": "v_glove_ct_specialist_ct", "renderer_type": "SkinnedMeshRenderer", "status": "needs_runtime_verification", "reasons": []},
-  {"mesh_path_id": 2114, "skin_key": "awp_dragonlore", "side": "first_person", "mesh_name": "v_snip_awp_awp_model", "renderer_type": "SkinnedMeshRenderer", "status": "blocked", "reasons": ["skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"]},
-  {"mesh_path_id": 1980, "skin_key": "awp_dragonlore", "side": "third_person", "mesh_name": "w_snip_awp", "renderer_type": "MeshFilter", "status": "blocked", "reasons": ["geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"]},
-  {"mesh_path_id": 2231, "skin_key": "ak47_neonrevolution", "side": "first_person", "mesh_name": "v_rif_ak47_reference1", "renderer_type": "SkinnedMeshRenderer", "status": "blocked", "reasons": ["skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"]},
-  {"mesh_path_id": 2043, "skin_key": "ak47_neonrevolution", "side": "third_person", "mesh_name": "tps_AK47", "renderer_type": "MeshFilter", "status": "blocked", "reasons": ["geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"]},
-  {"mesh_path_id": 1926, "skin_key": "m4a4_emperor", "side": "first_person", "mesh_name": "v_rif_m4a1_reference1", "renderer_type": "SkinnedMeshRenderer", "status": "blocked", "reasons": ["skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"]},
-  {"mesh_path_id": 2062, "skin_key": "m4a4_emperor", "side": "third_person", "mesh_name": "tps_M4A402100", "renderer_type": "MeshFilter", "status": "blocked", "reasons": ["geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"]},
-  {"mesh_path_id": 2112, "skin_key": "deagle_codered", "side": "first_person", "mesh_name": "v_pist_deagle_deagle_model", "renderer_type": "SkinnedMeshRenderer", "status": "blocked", "reasons": ["skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"]},
-  {"mesh_path_id": 2050, "skin_key": "deagle_codered", "side": "third_person", "mesh_name": "tps_Deagle00400", "renderer_type": "MeshFilter", "status": "blocked", "reasons": ["geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"]}
+  {
+   "skin_key": "butterfly_marblefade",
+   "side": "first_person",
+   "mesh_path_id": 2233,
+   "mesh_name": "v_knife_t_v_knife_flip_reference",
+   "renderer_type": "SkinnedMeshRenderer",
+   "status": "blocked",
+   "reasons": [
+    "skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"
+   ]
+  },
+  {
+   "skin_key": "butterfly_marblefade",
+   "side": "third_person",
+   "mesh_path_id": 2048,
+   "mesh_name": "tps_Butterfly",
+   "renderer_type": "MeshFilter",
+   "status": "blocked",
+   "reasons": [
+    "geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"
+   ]
+  },
+  {
+   "skin_key": "specialist_pillow",
+   "side": "first_person",
+   "mesh_path_id": 2000,
+   "mesh_name": "v_glove_ct_specialist",
+   "renderer_type": "SkinnedMeshRenderer",
+   "status": "needs_runtime_verification",
+   "reasons": []
+  },
+  {
+   "skin_key": "specialist_pillow",
+   "side": "first_person",
+   "mesh_path_id": 2215,
+   "mesh_name": "v_glove_ct_specialist",
+   "renderer_type": "SkinnedMeshRenderer",
+   "status": "needs_runtime_verification",
+   "reasons": []
+  },
+  {
+   "skin_key": "specialist_pillow",
+   "side": "first_person",
+   "mesh_path_id": 2216,
+   "mesh_name": "v_glove_ct_specialist",
+   "renderer_type": "SkinnedMeshRenderer",
+   "status": "needs_runtime_verification",
+   "reasons": []
+  },
+  {
+   "skin_key": "specialist_pillow",
+   "side": "first_person",
+   "mesh_path_id": 2217,
+   "mesh_name": "v_glove_ct_specialist",
+   "renderer_type": "SkinnedMeshRenderer",
+   "status": "needs_runtime_verification",
+   "reasons": []
+  },
+  {
+   "skin_key": "specialist_pillow",
+   "side": "third_person",
+   "mesh_path_id": 2115,
+   "mesh_name": "v_glove_ct_specialist_ct",
+   "renderer_type": "SkinnedMeshRenderer",
+   "status": "needs_runtime_verification",
+   "reasons": []
+  },
+  {
+   "skin_key": "awp_dragonlore",
+   "side": "first_person",
+   "mesh_path_id": 2114,
+   "mesh_name": "v_snip_awp_awp_model",
+   "renderer_type": "SkinnedMeshRenderer",
+   "status": "blocked",
+   "reasons": [
+    "skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"
+   ]
+  },
+  {
+   "skin_key": "awp_dragonlore",
+   "side": "third_person",
+   "mesh_path_id": 1980,
+   "mesh_name": "w_snip_awp",
+   "renderer_type": "MeshFilter",
+   "status": "blocked",
+   "reasons": [
+    "geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"
+   ]
+  },
+  {
+   "skin_key": "ak47_neonrevolution",
+   "side": "first_person",
+   "mesh_path_id": 2231,
+   "mesh_name": "v_rif_ak47_reference1",
+   "renderer_type": "SkinnedMeshRenderer",
+   "status": "blocked",
+   "reasons": [
+    "skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"
+   ]
+  },
+  {
+   "skin_key": "ak47_neonrevolution",
+   "side": "third_person",
+   "mesh_path_id": 2043,
+   "mesh_name": "tps_AK47",
+   "renderer_type": "MeshFilter",
+   "status": "blocked",
+   "reasons": [
+    "geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"
+   ]
+  },
+  {
+   "skin_key": "m4a4_emperor",
+   "side": "first_person",
+   "mesh_path_id": 1926,
+   "mesh_name": "v_rif_m4a1_reference1",
+   "renderer_type": "SkinnedMeshRenderer",
+   "status": "blocked",
+   "reasons": [
+    "skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"
+   ]
+  },
+  {
+   "skin_key": "m4a4_emperor",
+   "side": "third_person",
+   "mesh_path_id": 2062,
+   "mesh_name": "tps_M4A402100",
+   "renderer_type": "MeshFilter",
+   "status": "blocked",
+   "reasons": [
+    "geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"
+   ]
+  },
+  {
+   "skin_key": "deagle_codered",
+   "side": "first_person",
+   "mesh_path_id": 2112,
+   "mesh_name": "v_pist_deagle_deagle_model",
+   "renderer_type": "SkinnedMeshRenderer",
+   "status": "blocked",
+   "reasons": [
+    "skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"
+   ]
+  },
+  {
+   "skin_key": "deagle_codered",
+   "side": "third_person",
+   "mesh_path_id": 2050,
+   "mesh_name": "tps_Deagle00400",
+   "renderer_type": "MeshFilter",
+   "status": "blocked",
+   "reasons": [
+    "geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"
+   ]
+  }
  ],
- "skipped": [2233, 2048, 2114, 1980, 2231, 2043, 1926, 2062, 2112, 2050],
- "record_summary": {"record_count": 15, "skinned": [2233, 2000, 2215, 2216, 2217, 2115, 2114, 2231, 1926, 2112], "static_filter": [2048, 1980, 2043, 2062, 2050], "preserved_references": ["m_GameObject", "m_Bones", "m_RootBone", "Transform.m_Father", "Transform.m_Children", "Animator.m_Controller", "Avatar", "m_Materials"]},
+ "skipped": [
+  2233,
+  2048,
+  2114,
+  1980,
+  2231,
+  2043,
+  1926,
+  2062,
+  2112,
+  2050
+ ],
+ "record_summary": {
+  "record_count": 15,
+  "skinned": [
+   2233,
+   2000,
+   2215,
+   2216,
+   2217,
+   2115,
+   2114,
+   2231,
+   1926,
+   2112
+  ],
+  "static_filter": [
+   2048,
+   1980,
+   2043,
+   2062,
+   2050
+  ],
+  "preserved_references": [
+   "m_GameObject",
+   "m_Bones",
+   "m_RootBone",
+   "Transform.m_Father",
+   "Transform.m_Children",
+   "Animator.m_Controller",
+   "Avatar",
+   "m_Materials"
+  ]
+ },
  "plans": [
-  {"source": 2000, "target": 2215, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2000, "target": 2216, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2000, "target": 2217, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist", "status": "needs_runtime_verification", "failed_checks": []},
-  {"source": 2000, "target": 2115, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist_ct", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2215, "target": 2000, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2215, "target": 2216, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2215, "target": 2217, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2215, "target": 2115, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist_ct", "status": "needs_runtime_verification", "failed_checks": []},
-  {"source": 2216, "target": 2000, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2216, "target": 2215, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2216, "target": 2217, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2216, "target": 2115, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist_ct", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2217, "target": 2000, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist", "status": "needs_runtime_verification", "failed_checks": []},
-  {"source": 2217, "target": 2215, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2217, "target": 2216, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2217, "target": 2115, "source_name": "v_glove_ct_specialist", "target_name": "v_glove_ct_specialist_ct", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2115, "target": 2000, "source_name": "v_glove_ct_specialist_ct", "target_name": "v_glove_ct_specialist", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2115, "target": 2215, "source_name": "v_glove_ct_specialist_ct", "target_name": "v_glove_ct_specialist", "status": "needs_runtime_verification", "failed_checks": []},
-  {"source": 2115, "target": 2216, "source_name": "v_glove_ct_specialist_ct", "target_name": "v_glove_ct_specialist", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]},
-  {"source": 2115, "target": 2217, "source_name": "v_glove_ct_specialist_ct", "target_name": "v_glove_ct_specialist", "status": "blocked", "failed_checks": ["bone_count_match", "bindpose_count_match"]}
+  {
+   "source": 2000,
+   "target": 2215,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2000,
+   "target": 2216,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2000,
+   "target": 2217,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist",
+   "status": "needs_runtime_verification",
+   "failed_checks": []
+  },
+  {
+   "source": 2000,
+   "target": 2115,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist_ct",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2215,
+   "target": 2000,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2215,
+   "target": 2216,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2215,
+   "target": 2217,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2215,
+   "target": 2115,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist_ct",
+   "status": "needs_runtime_verification",
+   "failed_checks": []
+  },
+  {
+   "source": 2216,
+   "target": 2000,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2216,
+   "target": 2215,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2216,
+   "target": 2217,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2216,
+   "target": 2115,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist_ct",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2217,
+   "target": 2000,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist",
+   "status": "needs_runtime_verification",
+   "failed_checks": []
+  },
+  {
+   "source": 2217,
+   "target": 2215,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2217,
+   "target": 2216,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2217,
+   "target": 2115,
+   "source_name": "v_glove_ct_specialist",
+   "target_name": "v_glove_ct_specialist_ct",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2115,
+   "target": 2000,
+   "source_name": "v_glove_ct_specialist_ct",
+   "target_name": "v_glove_ct_specialist",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2115,
+   "target": 2215,
+   "source_name": "v_glove_ct_specialist_ct",
+   "target_name": "v_glove_ct_specialist",
+   "status": "needs_runtime_verification",
+   "failed_checks": []
+  },
+  {
+   "source": 2115,
+   "target": 2216,
+   "source_name": "v_glove_ct_specialist_ct",
+   "target_name": "v_glove_ct_specialist",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  },
+  {
+   "source": 2115,
+   "target": 2217,
+   "source_name": "v_glove_ct_specialist_ct",
+   "target_name": "v_glove_ct_specialist",
+   "status": "blocked",
+   "failed_checks": [
+    "bone_count_match",
+    "bindpose_count_match"
+   ]
+  }
  ],
- "limitations": ["Static serialized reference analysis only; runtime equip/deformation is unverified.", "This prototype repoints m_Mesh; it does not author new vertex, weight, or bind-pose data.", "Skin bundles in this build contain Material/Texture objects only; no replacement Mesh was found there."],
- "note": "Remote mirror: all 15 records, 10 skipped, 20 plans and pass/fail verdicts preserved. Per-record notes and full check detail strings are in the local deliverable copy."
+ "apply_gate_policy": {
+  "writable_plan_status": "reference_swap_eligible",
+  "write_requires": [
+   "pair plan reaches reference_swap_eligible",
+   "source Mesh readiness is not blocked",
+   "target renderer/Mesh readiness is not blocked",
+   "m_GameObject, m_Bones, m_RootBone, m_Materials unchanged after repoint",
+   "Animator m_Controller unchanged after repoint",
+   "serialized in-memory payload is non-empty"
+  ],
+  "skipped_statuses": [
+   "blocked",
+   "needs_runtime_verification"
+  ],
+  "needs_runtime_verification_is_not_promoted": true,
+  "readiness_evaluated_on_both_sides": true,
+  "write_strategy": "in-memory mutation and reference guards first; serialize and validate in memory; only then atomically replace the target via a same-directory temp file (fsync + os.replace)",
+  "single_mutable_field": "m_Mesh PPtr",
+  "failure_disk_contract": "any blocked / not-eligible / reference-drift condition returns applied=false and never creates or replaces resources.assets"
+ },
+ "limitations": [
+  "Static serialized reference analysis only; runtime equip/deformation is unverified.",
+  "This prototype repoints m_Mesh; it does not author new vertex, weight, or bind-pose data.",
+  "Skin bundles in this build contain Material/Texture objects only; no replacement Mesh was found there.",
+  "The apply gate evaluates readiness for both the source Mesh and the target renderer; a blocked or needs_runtime_verification record is skipped and writes no asset bytes.",
+  "No final IPA is produced and no on-device display success is claimed."
+ ],
+ "note": "Remote mirror: 15 records, 10 skipped, 20 plans, gate policy preserved. Per-record notes/full check detail are in the local deliverable copy."
 }
