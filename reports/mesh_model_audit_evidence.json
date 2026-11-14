@@ -1,0 +1,253 @@
+{
+ "stock_ipa_sha256": "6c3e740ca379c5daf55f635e1228414230ca4acb7608cd7b35e7f5c0e0d952d3",
+ "reference_ipa_sha256": "7b20f04d493c60cf5e215c0a82050fa691105fc47a0748e46e55cc3078f9cc9f",
+ "unity_version": "2021.3.45f1",
+ "object_count": 49496,
+ "target_meshes": [
+  {
+   "skin": "butterfly_marblefade",
+   "mesh_path_id": 2233,
+   "name": "v_knife_t_v_knife_flip_reference",
+   "vertex_count": 3059,
+   "uv_count": 3059,
+   "weight_entries": 0,
+   "bind_pose_count": 56,
+   "submesh_count": 1,
+   "obj_v": 3059,
+   "obj_vt": 3059,
+   "obj_vn": 3059,
+   "obj_f": 3232,
+   "obj_groups": 2,
+   "side": "first_person",
+   "renderer_type": "SkinnedMeshRenderer",
+   "readiness": "blocked",
+   "readiness_reasons": ["skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"],
+   "owner_count": 2,
+   "owners": [
+    {"type": "SkinnedMeshRenderer", "gameobject": "v_knife_t_v_knife_flip_reference", "materials": ["knife_flip"], "bone_count": 56, "root_bone": ""},
+    {"type": "SkinnedMeshRenderer", "gameobject": "v_knife_t_v_knife_flip_reference", "materials": ["flipknife_vanilla_tps_Diffuse"], "bone_count": 56, "root_bone": ""}
+   ]
+  },
+  {
+   "skin": "butterfly_marblefade",
+   "mesh_path_id": 2048,
+   "name": "tps_Butterfly",
+   "vertex_count": null, "uv_count": null, "weight_entries": null, "bind_pose_count": null, "submesh_count": null,
+   "obj_v": null, "obj_vt": null, "obj_vn": null, "obj_f": null, "obj_groups": 0,
+   "side": "third_person",
+   "renderer_type": "MeshFilter",
+   "readiness": "blocked",
+   "readiness_reasons": ["geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"],
+   "owner_count": 2,
+   "owners": [{"type": "MeshFilter", "gameobject": "Butterfly", "materials": [], "bone_count": 0, "root_bone": ""}]
+  },
+  {
+   "skin": "specialist_pillow",
+   "mesh_path_id": 2000,
+   "name": "v_glove_ct_specialist",
+   "vertex_count": 10050, "uv_count": 10050, "weight_entries": 10050, "bind_pose_count": 67, "submesh_count": 3,
+   "obj_v": 10050, "obj_vt": 10050, "obj_vn": 10050, "obj_f": 16400, "obj_groups": 4,
+   "side": "first_person",
+   "renderer_type": "SkinnedMeshRenderer",
+   "readiness": "needs_runtime_verification",
+   "readiness_reasons": [],
+   "owner_count": 2,
+   "owners": [
+    {"type": "SkinnedMeshRenderer", "gameobject": "v_glove_ct_specialist", "materials": ["default_handwrap_barearms_PBR", "glove_specialist_right", "glove_specialist_left"], "bone_count": 67, "root_bone": "arm_lower_l"},
+    {"type": "SkinnedMeshRenderer", "gameobject": "v_glove_ct_specialist", "materials": ["default_handwrap_barearms_PBR", "glove_specialist_right", "glove_specialist_left"], "bone_count": 67, "root_bone": "v_weapon.Bip01_L_Forearm"}
+   ]
+  },
+  {
+   "skin": "specialist_pillow",
+   "mesh_path_id": 2215,
+   "name": "v_glove_ct_specialist",
+   "vertex_count": 5314, "uv_count": 5314, "weight_entries": 5314, "bind_pose_count": 99, "submesh_count": 3,
+   "obj_v": 5314, "obj_vt": 5314, "obj_vn": 5314, "obj_f": 8200, "obj_groups": 4,
+   "side": "first_person",
+   "renderer_type": "SkinnedMeshRenderer",
+   "readiness": "needs_runtime_verification",
+   "readiness_reasons": [],
+   "owner_count": 3,
+   "owners": [{"type": "SkinnedMeshRenderer", "gameobject": "v_glove_ct_specialist", "materials": ["default_handwrap_barearms_PBR", "glove_specialist_right", "glove_specialist_left"], "bone_count": 99, "root_bone": "v_weapon.Bip01_L_Forearm"}]
+  },
+  {
+   "skin": "specialist_pillow",
+   "mesh_path_id": 2216,
+   "name": "v_glove_ct_specialist",
+   "vertex_count": 10050, "uv_count": 10050, "weight_entries": 10050, "bind_pose_count": 50, "submesh_count": 3,
+   "obj_v": 10050, "obj_vt": 10050, "obj_vn": 10050, "obj_f": 16400, "obj_groups": 4,
+   "side": "first_person",
+   "renderer_type": "SkinnedMeshRenderer",
+   "readiness": "needs_runtime_verification",
+   "readiness_reasons": [],
+   "owner_count": 1,
+   "owners": [{"type": "SkinnedMeshRenderer", "gameobject": "v_glove_ct_specialist", "materials": ["bare_arm_133", "glove_specialist_right", "glove_specialist_left"], "bone_count": 50, "root_bone": "knife_tip"}]
+  },
+  {
+   "skin": "specialist_pillow",
+   "mesh_path_id": 2217,
+   "name": "v_glove_ct_specialist",
+   "vertex_count": 10050, "uv_count": 10050, "weight_entries": 10050, "bind_pose_count": 67, "submesh_count": 3,
+   "obj_v": 10050, "obj_vt": 10050, "obj_vn": 10050, "obj_f": 16400, "obj_groups": 4,
+   "side": "first_person",
+   "renderer_type": "SkinnedMeshRenderer",
+   "readiness": "needs_runtime_verification",
+   "readiness_reasons": [],
+   "owner_count": 3,
+   "owners": [{"type": "SkinnedMeshRenderer", "gameobject": "v_glove_ct_specialist", "materials": ["default_handwrap_barearms_PBR", "glove_specialist_right", "glove_specialist_left"], "bone_count": 67, "root_bone": "v_weapon.Bip01_L_Forearm"}]
+  },
+  {
+   "skin": "specialist_pillow",
+   "mesh_path_id": 2115,
+   "name": "v_glove_ct_specialist_ct",
+   "vertex_count": 6690, "uv_count": 6690, "weight_entries": 6690, "bind_pose_count": 99, "submesh_count": 3,
+   "obj_v": 6690, "obj_vt": 6690, "obj_vn": 6690, "obj_f": 10717, "obj_groups": 4,
+   "side": "third_person",
+   "renderer_type": "SkinnedMeshRenderer",
+   "readiness": "needs_runtime_verification",
+   "readiness_reasons": [],
+   "owner_count": 3,
+   "owners": [{"type": "SkinnedMeshRenderer", "gameobject": "v_glove_ct_specialist_ct", "materials": ["cthand", "glove_specialist_right", "glove_specialist_left"], "bone_count": 99, "root_bone": "v_weapon.Bip01_L_Forearm"}]
+  },
+  {
+   "skin": "awp_dragonlore", "side": "first_person", "mesh_path_id": 2114, "name": "v_snip_awp_awp_model", "renderer_type": "SkinnedMeshRenderer",
+   "vertex_count": 20864, "uv_count": 20864, "weight_entries": 0, "bind_pose_count": 57, "submesh_count": 2, "bone_count": 57,
+   "root_bone": "v_weapon.Bip01_R_Forearm", "materials": ["awp", "awpScope"],
+   "decode_notes": ["m_IsReadable=false; geometry may rely on streamed resource data"],
+   "readiness": "blocked",
+   "readiness_reasons": ["skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"],
+   "owner_count": 0, "owners": []
+  },
+  {
+   "skin": "awp_dragonlore", "side": "third_person", "mesh_path_id": 1980, "name": "w_snip_awp", "renderer_type": "MeshFilter",
+   "vertex_count": 0, "uv_count": 0, "weight_entries": 0, "bind_pose_count": 94, "submesh_count": 2, "bone_count": 0, "root_bone": "",
+   "materials": ["awp_pbr", "scope_lens"],
+   "decode_notes": ["MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_p4qfh1_a'", "m_IsReadable=false; geometry may rely on streamed resource data"],
+   "readiness": "blocked",
+   "readiness_reasons": ["geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"],
+   "owner_count": 0, "owners": []
+  },
+  {
+   "skin": "ak47_neonrevolution", "side": "first_person", "mesh_path_id": 2231, "name": "v_rif_ak47_reference1", "renderer_type": "SkinnedMeshRenderer",
+   "vertex_count": 7448, "uv_count": 7448, "weight_entries": 0, "bind_pose_count": 56, "submesh_count": 1, "bone_count": 56,
+   "root_bone": "v_weapon.Bip01_R_Forearm", "materials": ["ak47_default_PBR"],
+   "decode_notes": ["m_IsReadable=false; geometry may rely on streamed resource data"],
+   "readiness": "blocked",
+   "readiness_reasons": ["skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"],
+   "owner_count": 0, "owners": []
+  },
+  {
+   "skin": "ak47_neonrevolution", "side": "third_person", "mesh_path_id": 2043, "name": "tps_AK47", "renderer_type": "MeshFilter",
+   "vertex_count": 0, "uv_count": 0, "weight_entries": 0, "bind_pose_count": 0, "submesh_count": 1, "bone_count": 0, "root_bone": "",
+   "materials": ["agent_ak47_default_tps_Diffuse"],
+   "decode_notes": ["MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_p4qfh1_a'", "m_IsReadable=false; geometry may rely on streamed resource data"],
+   "readiness": "blocked",
+   "readiness_reasons": ["geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"],
+   "owner_count": 0, "owners": []
+  },
+  {
+   "skin": "m4a4_emperor", "side": "first_person", "mesh_path_id": 1926, "name": "v_rif_m4a1_reference1", "renderer_type": "SkinnedMeshRenderer",
+   "vertex_count": 4060, "uv_count": 4060, "weight_entries": 0, "bind_pose_count": 43, "submesh_count": 1, "bone_count": 43, "root_bone": "",
+   "materials": ["m4a4"],
+   "decode_notes": ["m_IsReadable=false; geometry may rely on streamed resource data"],
+   "readiness": "blocked",
+   "readiness_reasons": ["skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"],
+   "owner_count": 0, "owners": []
+  },
+  {
+   "skin": "m4a4_emperor", "side": "third_person", "mesh_path_id": 2062, "name": "tps_M4A402100", "renderer_type": "MeshFilter",
+   "vertex_count": 0, "uv_count": 0, "weight_entries": 0, "bind_pose_count": 0, "submesh_count": 1, "bone_count": 0, "root_bone": "",
+   "materials": ["agent_m4a4_Diffuse"],
+   "decode_notes": ["MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_p4qfh1_a'", "m_IsReadable=false; geometry may rely on streamed resource data"],
+   "readiness": "blocked",
+   "readiness_reasons": ["geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"],
+   "owner_count": 0, "owners": []
+  },
+  {
+   "skin": "deagle_codered", "side": "first_person", "mesh_path_id": 2112, "name": "v_pist_deagle_deagle_model", "renderer_type": "SkinnedMeshRenderer",
+   "vertex_count": 10315, "uv_count": 10315, "weight_entries": 0, "bind_pose_count": 57, "submesh_count": 1, "bone_count": 57,
+   "root_bone": "v_weapon.Bip01_R_Forearm", "materials": ["pist_deagle"],
+   "decode_notes": ["m_IsReadable=false; geometry may rely on streamed resource data"],
+   "readiness": "blocked",
+   "readiness_reasons": ["skinned renderer but decoded skin weight entries are 0; skeleton binding cannot be verified from serialized data"],
+   "owner_count": 0, "owners": []
+  },
+  {
+   "skin": "deagle_codered", "side": "third_person", "mesh_path_id": 2050, "name": "tps_Deagle00400", "renderer_type": "MeshFilter",
+   "vertex_count": 0, "uv_count": 0, "weight_entries": 0, "bind_pose_count": 0, "submesh_count": 1, "bone_count": 0, "root_bone": "",
+   "materials": ["pist_deagle_Diffuse"],
+   "decode_notes": ["MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_p4qfh1_a'", "m_IsReadable=false; geometry may rely on streamed resource data"],
+   "readiness": "blocked",
+   "readiness_reasons": ["geometry stream decode failed: MeshHandler: FileNotFoundError: [Errno 2] No such file or directory: '/tmp/cf_mesh_swap_n4f5nuf0'"],
+   "owner_count": 0, "owners": []
+  }
+ ],
+ "controllers": [
+  {"name": "ak47", "animator_count": 2, "clip_count": 6},
+  {"name": "ak47_a", "animator_count": 1, "clip_count": 5},
+  {"name": "awp_a_new", "animator_count": 2, "clip_count": 5},
+  {"name": "butterfly", "animator_count": 3, "clip_count": 15},
+  {"name": "deagle", "animator_count": 3, "clip_count": 9},
+  {"name": "flip", "animator_count": 2, "clip_count": 11},
+  {"name": "gutknife_a", "animator_count": 2, "clip_count": 10},
+  {"name": "knifect", "animator_count": 3, "clip_count": 10},
+  {"name": "knifetr_a", "animator_count": 1, "clip_count": 10},
+  {"name": "m4a1s", "animator_count": 2, "clip_count": 5},
+  {"name": "m4a4", "animator_count": 3, "clip_count": 5},
+  {"name": "nomadknife_a", "animator_count": 2, "clip_count": 13}
+ ],
+ "material_slots": [
+  {
+   "material": "specialist_pillow_Diffuse",
+   "bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_gloves_assets_inventory/gloves/specialist_pillow/specialist_pillow_diffuse_b1c523162fd6155eb8f69748cc6ea2e5.bundle",
+   "slots": {"_MainTex": {"texture_name": "glove_specialist_left", "physical_bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_gloves_assets_inventory/gloves/specialist_pillow/glove_specialist_left_266795b810381bf3326c43fdd8798f18.bundle"}}
+  },
+  {
+   "material": "specialist_pillow_PBR",
+   "bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_gloves_assets_inventory/gloves/specialist_pillow/specialist_pillow_pbr_f6747b5ac5831db9a97f4ca45a80a328.bundle",
+   "slots": {
+    "_BumpMap": {"texture_name": "glove_specialist_left_normal", "physical_bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_gloves_assets_inventory/gloves/specialist_pillow/glove_specialist_left_normal_0cb36d1320da3d5e4d92b14c32b84aa0.bundle"},
+    "_MainTex": {"texture_name": "glove_specialist_left", "physical_bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_gloves_assets_inventory/gloves/specialist_pillow/glove_specialist_left_266795b810381bf3326c43fdd8798f18.bundle"},
+    "_SpecGlossMap": {"texture_name": "gloves_specialist_bigswell_mask", "physical_bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_shared_assets_assets/gamecontent/weapons/_surface/masks/gloves_specialist_bigswell_mask.png_3acfdea49bf3860cc349ce1536ed7862.bundle"}
+   }
+  },
+  {
+   "material": "specialist_pillow_Specular",
+   "bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_gloves_assets_inventory/gloves/specialist_pillow/specialist_pillow_specular_0bd6278e3d792c160b6e3c467c30acfa.bundle",
+   "slots": {
+    "_BumpMap": {"texture_name": "glove_specialist_left_normal", "physical_bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_gloves_assets_inventory/gloves/specialist_pillow/glove_specialist_left_normal_0cb36d1320da3d5e4d92b14c32b84aa0.bundle"},
+    "_MainTex": {"texture_name": "glove_specialist_left", "physical_bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_gloves_assets_inventory/gloves/specialist_pillow/glove_specialist_left_266795b810381bf3326c43fdd8798f18.bundle"},
+    "_SpecGlossMap": {"texture_name": "gloves_specialist_bigswell_mask", "physical_bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_shared_assets_assets/gamecontent/weapons/_surface/masks/gloves_specialist_bigswell_mask.png_3acfdea49bf3860cc349ce1536ed7862.bundle"}
+   }
+  },
+  {
+   "material": "butterfly_marblefade_Diffuse",
+   "bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_skins_assets_inventory/skins/butterfly_marblefade/butterfly_marblefade_diffuse_d8dce463cce0e7954cc770c58bd21561.bundle",
+   "slots": {"_MainTex": {"texture_name": "butterfly_marblefade_paint", "physical_bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_shared_assets_assets/gamecontent/inventory/skins/butterfly_marblefade/butterfly_marblefade_paint.png_361ad67deb1d6c4560006d94c131d95f.bundle"}}
+  },
+  {
+   "material": "butterfly_marblefade_PBR",
+   "bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_skins_assets_inventory/skins/butterfly_marblefade/butterfly_marblefade_pbr_270226e497f57d2721010053ccd2b41d.bundle",
+   "slots": {
+    "_MainTex": {"texture_name": "butterfly_marblefade_cs2", "physical_bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_shared_assets_assets/gamecontent/inventory/skins/butterfly_marblefade/butterfly_marblefade_cs2.png_a6592926bac0dc3df3faadc6d961eb6c.bundle"},
+    "_PaintPattern": {"texture_name": "smoke2", "physical_bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_shared_assets_assets/gamecontent/weapons/_surface/paints/smoke2.png_221d108d7e2adafeb4bb318c0e03672a.bundle"},
+    "_SpecGlossMap": {"texture_name": "butterfly_butterfly_marblefade__cs2_mask", "physical_bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_shared_assets_assets/gamecontent/weapons/_surface/masks/butterfly_butterfly_marblefade__cs2_mask.png_c69a727c349018d5c30fa17df3cf2a69.bundle"}
+   }
+  },
+  {
+   "material": "butterfly_marblefade_Specular",
+   "bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_skins_assets_inventory/skins/butterfly_marblefade/butterfly_marblefade_specular_be6f2a07203a1d16275bdd805b37ef26.bundle",
+   "slots": {
+    "_MainTex": {"texture_name": "butterfly_marblefade_paint", "physical_bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_shared_assets_assets/gamecontent/inventory/skins/butterfly_marblefade/butterfly_marblefade_paint.png_361ad67deb1d6c4560006d94c131d95f.bundle"},
+    "_SpecGlossMap": {"texture_name": "butterfly_butterfly_marblefade__cs2_mask", "physical_bundle": "Payload/CounterFlame.app/Data/Raw/aa/iOS/inv_shared_assets_assets/gamecontent/weapons/_surface/masks/butterfly_butterfly_marblefade__cs2_mask.png_c69a727c349018d5c30fa17df3cf2a69.bundle"}
+   }
+  }
+ ],
+ "bundle_mesh_counts": {},
+ "skin_bundle_meshes": {"butterfly_marblefade": [], "specialist_pillow": []},
+ "readiness_summary": {
+  "needs_runtime_verification": [2000, 2215, 2216, 2217, 2115],
+  "blocked": [2233, 2048, 2114, 1980, 2231, 2043, 1926, 2062, 2112, 2050]
+ },
+ "note": "Remote mirror: 15 mesh records, controller counts and material bundle dependencies preserved. Duplicate identical renderer attachments deduplicated; full copy is in the local deliverable."
+}
