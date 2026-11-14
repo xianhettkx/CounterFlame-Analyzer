@@ -1,0 +1,72 @@
+name: Extract Reference Local Inventory Runtime
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/extract-reference-runtime.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Download and verify reference IPA
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, urllib.request
+          url = "https://github.com/xianhettkx/CounterFlame-Analyzer/releases/download/ipa-v1/CS2._1.4.1_.5.8.78.2.ipa"
+          expected = "7b20f04d493c60cf5e215c0a82050fa691105fc47a0748e46e55cc3078f9cc9f"
+          req = urllib.request.Request(url, headers={"User-Agent":"CounterFlame-Inventory-Audit/1.0"})
+          h = hashlib.sha256()
+          with urllib.request.urlopen(req, timeout=300) as r, open("reference.ipa","wb") as f:
+              while True:
+                  b = r.read(8 * 1024 * 1024)
+                  if not b: break
+                  f.write(b); h.update(b)
+          actual = h.hexdigest()
+          print("reference IPA SHA256:", actual)
+          if actual != expected: raise SystemExit("Reference IPA checksum mismatch")
+          PY
+      - name: Extract only inventory runtime evidence
+        run: |
+          python - <<'PY'
+          import zipfile, pathlib, json, hashlib
+          z = zipfile.ZipFile("reference.ipa")
+          names = z.namelist()
+          targets = {
+            "CounterFlameKAlert551.dylib": [n for n in names if n.endswith("/Frameworks/CounterFlameKAlert551.dylib")],
+            "global-metadata.dat": [n for n in names if n.endswith("/global-metadata.dat")],
+            "UnityFramework": [n for n in names if n.endswith("/Frameworks/UnityFramework.framework/UnityFramework") or n.endswith("/UnityFramework")],
+            "Info.plist": [n for n in names if n.endswith("/Info.plist")],
+          }
+          out = pathlib.Path("runtime-evidence"); out.mkdir()
+          report = {"source":"reference IPA","sha256":"7b20f04d493c60cf5e215c0a82050fa691105fc47a0748e46e55cc3078f9cc9f","files":{}}
+          for label, hits in targets.items():
+              if not hits:
+                  report["files"][label] = {"status":"not_found"}
+                  continue
+              # Keep exactly one match per target to avoid ambiguous extraction.
+              if len(hits) != 1:
+                  raise SystemExit(f"Ambiguous {label}: {hits}")
+              data = z.read(hits[0])
+              (out / label).write_bytes(data)
+              report["files"][label] = {"ipa_path":hits[0],"size":len(data),"sha256":hashlib.sha256(data).hexdigest()}
+          (out/"manifest.json").write_text(json.dumps(report,indent=2),encoding="utf-8")
+          print(json.dumps(report,indent=2))
+          if report["files"]["CounterFlameKAlert551.dylib"].get("status") == "not_found":
+              raise SystemExit("Reference inventory dylib missing")
+          PY
+      - name: Upload runtime evidence for local static analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: reference-inventory-runtime-evidence
+          path: runtime-evidence/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
