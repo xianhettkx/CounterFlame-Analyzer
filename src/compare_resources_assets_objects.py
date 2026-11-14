@@ -29,10 +29,16 @@ def index_assets(data: bytes, UnityPy):
             digest = None
             raw_size = None
             errors.append({"path_id": pid, "type": typ, "error": type(exc).__name__})
-        result[(pid, typ)] = {
+        entry = {
             "path_id": pid, "type": typ, "name": str(name),
             "sha256": digest, "raw_size": raw_size,
         }
+        if typ == "MonoBehaviour" and str(name) == "LocalizationSettings":
+            try:
+                entry["type_tree"] = obj.read_typetree()
+            except Exception as exc:
+                entry["type_tree_error"] = f"{type(exc).__name__}: {exc}"
+        result[(pid, typ)] = entry
     return result, errors
 
 def main():
@@ -75,7 +81,58 @@ def main():
         x, y = a[k], b[k]
         if x["sha256"] != y["sha256"] or x["name"] != y["name"]:
             changed.append({"stock": x, "reference": y})
+    def normalize(value, depth=0):
+        if depth > 12:
+            return repr(value)[:300]
+        if isinstance(value, dict):
+            return {str(k): normalize(v, depth + 1) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [normalize(v, depth + 1) for v in value]
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            return value
+        if isinstance(value, bytes):
+            return {"bytes_length": len(value), "hex_prefix": value[:32].hex()}
+        return repr(value)[:500]
+
+    def flatten(value, prefix=""):
+        out = {}
+        if isinstance(value, dict):
+            for key, child in value.items():
+                path = f"{prefix}.{key}" if prefix else str(key)
+                out.update(flatten(child, path))
+        elif isinstance(value, list):
+            out[prefix + ".__length__"] = len(value)
+            for i, child in enumerate(value[:500]):
+                out.update(flatten(child, f"{prefix}[{i}]"))
+        else:
+            out[prefix] = value
+        return out
+
+    tree_diffs = []
+    for key in sorted(keys_a & keys_b):
+        x, y = a[key], b[key]
+        if "type_tree" in x or "type_tree" in y:
+            tx, ty = normalize(x.get("type_tree")), normalize(y.get("type_tree"))
+            fx, fy = flatten(tx or {}), flatten(ty or {})
+            fields = []
+            for field in sorted(set(fx) | set(fy)):
+                if fx.get(field, "__MISSING__") != fy.get(field, "__MISSING__"):
+                    fields.append({
+                        "field": field,
+                        "stock": fx.get(field, "__MISSING__"),
+                        "reference": fy.get(field, "__MISSING__"),
+                    })
+            tree_diffs.append({
+                "path_id": key[0], "type": key[1],
+                "name": x.get("name") or y.get("name"),
+                "stock_error": x.get("type_tree_error"),
+                "reference_error": y.get("type_tree_error"),
+                "changed_field_count": len(fields),
+                "changed_fields": fields[:2000],
+            })
+
     report = {
+        "type_tree_diffs": tree_diffs,
         "scope": "Read-only UnityPy serialized-object comparison; no IPA modification.",
         "asset_path": TARGET,
         "stock_object_count": len(a),
@@ -118,6 +175,15 @@ def main():
         f"sha256 {str(x['stock']['sha256'])[:12]} -> {str(x['reference']['sha256'])[:12]}"
         for x in changed
     ] or ["- None"])
+    lines += ["", "## Type-tree field differences", ""]
+    for tree in tree_diffs:
+        lines.append(f"- {tree['name']} path_id={tree['path_id']}: {tree['changed_field_count']} changed fields")
+        lines.extend([
+            f"  - {x['field']}: {str(x['stock'])[:180]!r} -> {str(x['reference'])[:180]!r}"
+            for x in tree["changed_fields"][:100]
+        ])
+    if not tree_diffs:
+        lines.append("- No readable type-tree differences were found.")
     lines += ["", "## Limits", "",
         "This is a static serialized-object diff. It does not establish why an object changed,",
         "whether the game uses it at runtime, or whether an account/server recognizes any inventory state."]
