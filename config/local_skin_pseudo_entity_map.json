@@ -98,6 +98,10 @@
         "base_materials": [
           "awp",
           "awpScope"
+        ],
+        "mesh_path_ids": [
+          2114,
+          2032
         ]
       },
       "third_person": {
@@ -106,6 +110,11 @@
         "base_materials": [
           "awp_pbr",
           "scope_lens"
+        ],
+        "mesh_path_ids": [
+          2045,
+          1980,
+          1981
         ]
       },
       "skin_materials": [
@@ -131,6 +140,12 @@
         "mesh_path_id": 2231,
         "base_materials": [
           "ak47_default_PBR"
+        ],
+        "mesh_path_ids": [
+          2014,
+          2122,
+          2231,
+          1908
         ]
       },
       "third_person": {
@@ -138,6 +153,10 @@
         "mesh_path_id": 2043,
         "base_materials": [
           "ak47_default_tps_Diffuse"
+        ],
+        "mesh_path_ids": [
+          2043,
+          2127
         ]
       },
       "skin_materials": [
@@ -164,6 +183,12 @@
         "mesh_path_id": 1926,
         "base_materials": [
           "m4a4"
+        ],
+        "mesh_path_ids": [
+          1926,
+          1930,
+          1916,
+          1931
         ]
       },
       "third_person": {
@@ -172,6 +197,11 @@
         "base_materials": [
           "m4a4_Diffuse",
           "agent_m4a4_Diffuse"
+        ],
+        "mesh_path_ids": [
+          2062,
+          1978,
+          1979
         ]
       },
       "skin_materials": [
@@ -197,6 +227,10 @@
         "mesh_path_id": 2112,
         "base_materials": [
           "pist_deagle"
+        ],
+        "mesh_path_ids": [
+          2112,
+          1953
         ]
       },
       "third_person": {
@@ -204,6 +238,11 @@
         "mesh_path_id": 2050,
         "base_materials": [
           "pist_deagle_Diffuse"
+        ],
+        "mesh_path_ids": [
+          2050,
+          1974,
+          1975
         ]
       },
       "skin_materials": [
@@ -232,5 +271,6 @@
     "This manifest records statically confirmed asset names and path IDs for this exact IPA only.",
     "It does not inject a runtime hook or alter serialized renderer references.",
     "It does not claim the skins are equipped or rendered in a live match."
-  ]
+  ],
+  "candidate_scope_note": "Candidate mesh_path_ids include every same-weapon first-person and third-person mesh variant recorded in reports/target_model_material_map.md for this exact IPA. These are analysis candidates, not approved swaps."
 }
