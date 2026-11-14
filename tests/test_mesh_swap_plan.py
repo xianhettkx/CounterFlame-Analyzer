@@ -241,6 +241,52 @@ class ReferenceSnapshotTests(unittest.TestCase):
         with self.assertRaises(ReferenceDriftError):
             assert_no_reference_drift(snap, snap, before, after)
 
+    def test_parent_animator_drift_during_mesh_repoint_aborts(self):
+        objs = self._hierarchy()
+        class MutatingMeshRef:
+            def __init__(self):
+                self.m_FileID = 0
+                self._path_id = 999
+            @property
+            def m_PathID(self):
+                return self._path_id
+            @m_PathID.setter
+            def m_PathID(self, value):
+                self._path_id = value
+                objs[30]._d.m_Controller = self._ptr(777)
+
+        data = SimpleNamespace(
+            m_GameObject=self._ptr(10), m_Bones=[], m_RootBone=None,
+            m_Materials=[], m_Mesh=MutatingMeshRef(),
+        )
+        with self.assertRaises(ReferenceDriftError):
+            proto.perform_reference_swap(data, objs, 400)
+        self.assertEqual(data.m_Mesh.m_PathID, 400)
+
+    def test_missing_transform_fails_closed(self):
+        objs = self._hierarchy()
+        objs[10]._d.m_Component = []
+        with self.assertRaises(ReferenceDriftError):
+            snapshot_animator_controller(objs, 10)
+
+    def test_transform_parent_cycle_fails_closed(self):
+        objs = self._hierarchy()
+        objs[21]._d.m_Father = self._ptr(11)
+        with self.assertRaises(ReferenceDriftError):
+            snapshot_animator_controller(objs, 10)
+
+    def test_atomic_replace_failure_preserves_existing_file(self):
+        import os
+        from unittest.mock import patch
+        tmp = Path(tempfile.mkdtemp())
+        target = tmp / "resources.assets"
+        target.write_bytes(b"original")
+        with patch.object(os, "replace", side_effect=OSError("simulated replace failure")):
+            with self.assertRaises(OSError):
+                atomic_write_bytes(target, b"replacement")
+        self.assertEqual(target.read_bytes(), b"original")
+        self.assertEqual([p.name for p in tmp.iterdir()], ["resources.assets"])
+
 
 def _ptr(pid):
     return SimpleNamespace(m_FileID=0, m_PathID=pid)
