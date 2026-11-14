@@ -1,0 +1,126 @@
+{
+  "schema": "counterflame-il2cpp-ui-translation-candidates-v1",
+  "source": "Payload/CounterFlame.app/Data/Managed/Metadata/global-metadata.dat",
+  "source_sha256": "not_embedded_in_report",
+  "note": "Strings are confirmed IL2CPP string-literal table entries and match the existing reviewed Chinese dictionary. They are not patched until their call sites are confirmed to be user-visible labels rather than logic keys or diagnostics.",
+  "count": 13,
+  "entries": [
+    {
+      "source": "Back",
+      "zh": "返回",
+      "metadata_version": 31,
+      "literal_index": 2928,
+      "table_offset": 23680,
+      "status": "candidate_only_callsite_not_validated",
+      "apply_allowed": false
+    },
+    {
+      "source": "Cancel",
+      "zh": "取消",
+      "metadata_version": 31,
+      "literal_index": 3442,
+      "table_offset": 27792,
+      "status": "candidate_only_callsite_not_validated",
+      "apply_allowed": false
+    },
+    {
+      "source": "Close",
+      "zh": "关闭",
+      "metadata_version": 31,
+      "literal_index": 3975,
+      "table_offset": 32056,
+      "status": "candidate_only_callsite_not_validated",
+      "apply_allowed": false
+    },
+    {
+      "source": "Coming Soon",
+      "zh": "即将推出",
+      "metadata_version": 31,
+      "literal_index": 4046,
+      "table_offset": 32624,
+      "status": "candidate_only_callsite_not_validated",
+      "apply_allowed": false
+    },
+    {
+      "source": "Continue",
+      "zh": "继续",
+      "metadata_version": 31,
+      "literal_index": 4157,
+      "table_offset": 33512,
+      "status": "candidate_only_callsite_not_validated",
+      "apply_allowed": false
+    },
+    {
+      "source": "Error",
+      "zh": "错误",
+      "metadata_version": 31,
+      "literal_index": 4958,
+      "table_offset": 39920,
+      "status": "candidate_only_callsite_not_validated",
+      "apply_allowed": false
+    },
+    {
+      "source": "Gloves",
+      "zh": "手套",
+      "metadata_version": 31,
+      "literal_index": 5724,
+      "table_offset": 46048,
+      "status": "candidate_only_callsite_not_validated",
+      "apply_allowed": false
+    },
+    {
+      "source": "Inspect",
+      "zh": "检视",
+      "metadata_version": 31,
+      "literal_index": 6261,
+      "table_offset": 50344,
+      "status": "candidate_only_callsite_not_validated",
+      "apply_allowed": false
+    },
+    {
+      "source": "Inventory",
+      "zh": "库存",
+      "metadata_version": 31,
+      "literal_index": 6584,
+      "table_offset": 52928,
+      "status": "candidate_only_callsite_not_validated",
+      "apply_allowed": false
+    },
+    {
+      "source": "Loading",
+      "zh": "加载中",
+      "metadata_version": 31,
+      "literal_index": 7117,
+      "table_offset": 57192,
+      "status": "candidate_only_callsite_not_validated",
+      "apply_allowed": false
+    },
+    {
+      "source": "Open",
+      "zh": "打开",
+      "metadata_version": 31,
+      "literal_index": 8303,
+      "table_offset": 66680,
+      "status": "candidate_only_callsite_not_validated",
+      "apply_allowed": false
+    },
+    {
+      "source": "Profile",
+      "zh": "个人资料",
+      "metadata_version": 31,
+      "literal_index": 8949,
+      "table_offset": 71848,
+      "status": "candidate_only_callsite_not_validated",
+      "apply_allowed": false
+    },
+    {
+      "source": "Settings",
+      "zh": "设置",
+      "metadata_version": 31,
+      "literal_index": 9858,
+      "table_offset": 79120,
+      "status": "candidate_only_callsite_not_validated",
+      "apply_allowed": false
+    }
+  ]
+}
