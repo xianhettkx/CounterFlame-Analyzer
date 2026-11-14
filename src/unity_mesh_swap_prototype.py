@@ -1,0 +1,433 @@
+#!/usr/bin/env python3
+"""Local-only, gated prototype for Mesh reference replacement.
+
+This is the minimal viable model-swap prototype. It is deliberately separated
+from the existing texture-override pipeline:
+
+* Texture pipeline: ``unity_local_skin_patch.py`` rewrites Texture2D payload
+  bytes inside material slots. That is NOT a model swap.
+* This prototype: plans / (with an explicit flag) repoints a renderer's
+  ``m_Mesh`` PPtr to another Mesh that already exists in the same serialized
+  file. It does not author new mesh vertex bytes, does not rebuild
+  AssetBundles, and does not touch inventory, entitlements, networking,
+  anti-cheat, or runtime injection.
+
+Default mode is audit-only. A reference swap writes nothing unless
+``--apply-reference-swap`` is supplied together with an explicit renderer and
+mesh path id, and the plan passes every invariant check.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import zipfile
+import tempfile
+from pathlib import Path
+from typing import Any, Optional
+
+try:  # package import under tests; flat import when run as a script
+    from .unity_mesh_swap_plan import (
+        MeshModelRecord,
+        SwapPlan,
+        evaluate_swap,
+        record_readiness,
+        summarize_manifests,
+    )
+except ImportError:  # pragma: no cover - script entry point
+    from unity_mesh_swap_plan import (
+        MeshModelRecord,
+        SwapPlan,
+        evaluate_swap,
+        record_readiness,
+        summarize_manifests,
+    )
+
+
+# Renderer reference fields that a mesh reference swap must never rewrite.
+# (m_BindPose lives on the Mesh itself and travels with the swapped Mesh;
+#  it is not a renderer-level reference and is not touched here.)
+PRESERVED_RENDERER_FIELDS = ("m_GameObject", "m_Bones", "m_RootBone", "m_Materials")
+
+
+def snapshot_renderer_references(data: Any) -> dict[str, Any]:
+    """Capture the PPtr values that must survive an m_Mesh repoint unchanged."""
+    return {
+        "m_GameObject": ptr(gv(data, "m_GameObject", None)),
+        "m_Bones": [ptr(b) for b in (gv(data, "m_Bones", []) or [])],
+        "m_RootBone": ptr(gv(data, "m_RootBone", None)),
+        "m_Materials": [ptr(m) for m in (gv(data, "m_Materials", []) or [])],
+    }
+
+
+def snapshot_animator_controller(objs: dict[int, Any], go_pid: int) -> Optional[dict[str, int]]:
+    """Locate the Animator on the GameObject and capture its controller PPtr.
+
+    Animators may live on a parent rig rather than the mesh GameObject; in that
+    case this returns None and the caller records that the controller was not
+    located at this level. The controller reference itself is never rewritten.
+    """
+    if not go_pid or go_pid not in objs:
+        return None
+    try:
+        go_data = objs[go_pid].read()
+    except Exception:
+        return None
+    for pair in gv(go_data, "m_Component", []) or []:
+        comp = gv(pair, "component", None)
+        if comp is None and isinstance(pair, (list, tuple)) and len(pair) > 1:
+            comp = pair[1]
+        component = ptr(comp)
+        if not component or component["path_id"] not in objs:
+            continue
+        candidate = objs[component["path_id"]]
+        if candidate.type.name != "Animator":
+            continue
+        try:
+            anim_data = candidate.read()
+            return ptr(gv(anim_data, "m_Controller", None))
+        except Exception:
+            return None
+    return None
+
+
+def gv(obj: Any, key: str, default: Any = None) -> Any:
+    try:
+        return getattr(obj, key)
+    except Exception:
+        return default
+
+
+def ptr(p: Any) -> Optional[dict[str, int]]:
+    if p is None:
+        return None
+    return {
+        "file_id": int(gv(p, "m_FileID", 0) or 0),
+        "path_id": int(gv(p, "m_PathID", 0) or 0),
+    }
+
+
+def _mesh_record(objs: dict[int, Any], mesh_pid: int, skin_key: str = "", side: str = "") -> Optional[MeshModelRecord]:
+    obj = objs.get(mesh_pid)
+    if obj is None:
+        return None
+    try:
+        mesh = obj.read()
+    except Exception:
+        return MeshModelRecord(mesh_path_id=mesh_pid, mesh_name=obj.peek_name() or "",
+                                renderer_type="unknown", skin_key=skin_key, side=side,
+                                notes=["mesh read error"])
+    name = str(gv(mesh, "m_Name", "") or obj.peek_name() or "")
+    record = MeshModelRecord(
+        mesh_path_id=mesh_pid,
+        mesh_name=name,
+        renderer_type="unknown",
+        skin_key=skin_key,
+        side=side,
+        submesh_count=len(gv(mesh, "m_SubMeshes", []) or []),
+        bind_pose_count=len(gv(mesh, "m_BindPose", []) or []),
+        mesh_is_readable=gv(mesh, "m_IsReadable", None),
+    )
+    # MeshHandler decoding is best-effort; weapon streams may be non-readable.
+    try:
+        from UnityPy.helpers.MeshHelper import MeshHandler
+
+        handler = MeshHandler(mesh)
+        handler.process()
+        record.vertex_count = len(getattr(handler, "m_Vertices", []) or [])
+        record.uv_count = len(getattr(handler, "m_UV0", []) or [])
+        record.weight_entries = len(getattr(handler, "m_BoneWeights", []) or [])
+        record.bone_indices_entries = len(getattr(handler, "m_BoneIndices", []) or [])
+    except Exception as exc:
+        record.notes.append(f"MeshHandler: {type(exc).__name__}: {exc}"[:160])
+
+    # Find the owning renderer/filter and copy its static facts.
+    for comp in objs.values():
+        if comp.type.name not in ("MeshFilter", "SkinnedMeshRenderer", "MeshRenderer"):
+            continue
+        try:
+            data = comp.read()
+        except Exception:
+            continue
+        mesh_ref = ptr(gv(data, "m_Mesh", None))
+        if not mesh_ref or mesh_ref["path_id"] != mesh_pid or mesh_ref["file_id"] != 0:
+            continue
+        go_ref = ptr(gv(data, "m_GameObject", None))
+        go_name = ""
+        if go_ref and go_ref["path_id"] in objs:
+            try:
+                go_name = str(gv(objs[go_ref["path_id"]].read(), "m_Name", "") or "")
+            except Exception:
+                pass
+        materials: list[str] = []
+        for mp in gv(data, "m_Materials", []) or []:
+            m = ptr(mp)
+            if m and m["path_id"] in objs:
+                try:
+                    materials.append(str(gv(objs[m["path_id"]].read(), "m_Name", "") or ""))
+                except Exception:
+                    materials.append("")
+            else:
+                materials.append(f"<external {m['file_id']}/{m['path_id']}>" if m else "")
+        bones = [ptr(b) for b in gv(data, "m_Bones", []) or []]
+        root = ptr(gv(data, "m_RootBone", None))
+        root_name = ""
+        if root and root["path_id"] in objs:
+            try:
+                tr = objs[root["path_id"]].read()
+                g = ptr(gv(tr, "m_GameObject", None))
+                if g and g["path_id"] in objs:
+                    root_name = str(gv(objs[g["path_id"]].read(), "m_Name", "") or "")
+            except Exception:
+                pass
+        record.renderer_type = comp.type.name
+        record.gameobject_name = go_name
+        record.material_names = materials
+        record.renderer_bone_count = len(bones)
+        record.root_bone_name = root_name
+        # MeshFilter does not carry materials; resolve the sibling MeshRenderer
+        # on the same GameObject for the material slot list.
+        if comp.type.name == "MeshFilter" and go_ref:
+            for sib in objs.values():
+                if sib.type.name != "MeshRenderer":
+                    continue
+                try:
+                    sd = sib.read()
+                    sib_go = ptr(gv(sd, "m_GameObject", None))
+                    if not sib_go or sib_go["path_id"] != go_ref["path_id"]:
+                        continue
+                    sib_mats = []
+                    for mp in gv(sd, "m_Materials", []) or []:
+                        m = ptr(mp)
+                        if m and m["path_id"] in objs:
+                            try:
+                                sib_mats.append(str(gv(objs[m["path_id"]].read(), "m_Name", "") or ""))
+                            except Exception:
+                                sib_mats.append("")
+                        else:
+                            sib_mats.append(f"<external {m['file_id']}/{m['path_id']}>" if m else "")
+                    record.material_names = sib_mats
+                except Exception:
+                    pass
+        if record.mesh_is_readable is False:
+            record.notes.append("m_IsReadable=false; geometry may rely on streamed resource data")
+        break  # first owning renderer is enough for the static plan
+
+    return record
+
+
+def load_resources(ipa_path: Path, out: Path) -> tuple[Any, dict[int, Any], Path]:
+    import UnityPy
+
+    with zipfile.ZipFile(ipa_path, "r") as zf:
+        names = zf.namelist()
+        asset_path = next((n for n in names if n.endswith("/resources.assets")), None)
+        if asset_path is None:
+            raise SystemExit("resources.assets not found in IPA")
+        stream_path = next((n for n in names if n.endswith("/resources.assets.resS")), None)
+        if stream_path is None:
+            stream_path = next((n for n in names if n.endswith("/resources.resource")), None)
+        temp = tempfile.TemporaryDirectory(prefix="cf_mesh_swap_")
+        root = Path(temp.name)
+        main_asset = root / "resources.assets"
+        main_asset.write_bytes(zf.read(asset_path))
+        if stream_path:
+            data = zf.read(stream_path)
+            (root / "resources.assets.resS").write_bytes(data)
+            (root / "resources.resource").write_bytes(data)
+    env = UnityPy.load(str(main_asset))
+    objs = {int(o.path_id): o for o in env.objects}
+    return env, objs, main_asset
+
+
+def plan_cross_swaps(records: list[MeshModelRecord]) -> list[dict[str, Any]]:
+    """Pair same-family records and evaluate a reference-swap plan.
+
+    This is an offline feasibility check between stock meshes; it does not
+    claim the paired skins are equippable at runtime.
+    """
+    plans: list[dict[str, Any]] = []
+    # Prototype pairs only meshes that belong to the same catalog skin entry.
+    # Cross-family pairings (e.g. butterfly TPS mesh vs AK TPS mesh) are not
+    # proposed; geometry scale, attach point and bone layout are not comparable.
+    by_skin: dict[str, list[MeshModelRecord]] = {}
+    for record in records:
+        by_skin.setdefault(record.skin_key or record.mesh_name, []).append(record)
+    for pool in by_skin.values():
+        for source in pool:
+            for target in pool:
+                if source.mesh_path_id == target.mesh_path_id:
+                    continue
+                if source.renderer_type != target.renderer_type:
+                    continue
+                plan: SwapPlan = evaluate_swap(source, target)
+                plans.append({
+                    "skin_key": source.skin_key,
+                    "source_mesh_path_id": source.mesh_path_id,
+                    "source_mesh_name": source.mesh_name,
+                    "source_side": source.side,
+                    "target_mesh_path_id": target.mesh_path_id,
+                    "target_mesh_name": target.mesh_name,
+                    "target_side": target.side,
+                    "status": plan.status,
+                    "checks": [vars(c) for c in plan.checks],
+                    "preserved_references": list(plan.preserved_references),
+                })
+    return plans
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Local-only Mesh reference swap prototype (audit default)")
+    ap.add_argument("ipa")
+    ap.add_argument("--manifest", default="config/local_skin_pseudo_entity_map.json")
+    ap.add_argument("--out", default="reports/mesh_swap_prototype")
+    ap.add_argument("--apply-reference-swap", action="store_true",
+                     help="Gate: actually rewrite m_Mesh on the selected renderer (no effect otherwise)")
+    ap.add_argument("--renderer-pid", type=int, default=0)
+    ap.add_argument("--mesh-pid", type=int, default=0)
+    args = ap.parse_args()
+
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
+
+    env, objs, main_asset = load_resources(Path(args.ipa), out)
+    pid_meta: dict[int, tuple[str, str]] = {}
+    for skin in manifest.get("skins", []):
+        skin_key = skin.get("key", "")
+        for side in ("first_person", "third_person"):
+            slot = skin.get(side) or {}
+            if slot.get("mesh_path_id"):
+                pid_meta[int(slot["mesh_path_id"])] = (skin_key, side)
+            for pid in slot.get("mesh_path_ids", []) or []:
+                pid_meta[int(pid)] = (skin_key, side)
+
+    records: list[MeshModelRecord] = []
+    for pid, (skin_key, side) in pid_meta.items():
+        record = _mesh_record(objs, pid, skin_key=skin_key, side=side)
+        if record is not None:
+            records.append(record)
+    plans = plan_cross_swaps(records)
+
+    readiness: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+    for record in records:
+        status, reasons = record_readiness(record)
+        entry = {
+            "skin_key": record.skin_key,
+            "side": record.side,
+            "mesh_path_id": record.mesh_path_id,
+            "mesh_name": record.mesh_name,
+            "renderer_type": record.renderer_type,
+            "status": status,
+            "reasons": reasons,
+        }
+        readiness.append(entry)
+        if status == "blocked":
+            skipped.append(entry)
+
+    report: dict[str, Any] = {
+        "mode": "apply_reference_swap" if args.apply_reference_swap else "audit_only",
+        "applied": False,
+        "safety": {
+            "server_inventory_modified": False,
+            "account_entitlements_modified": False,
+            "network_or_anticheat_modified": False,
+            "runtime_injection": False,
+            "texture_payload_replaced": False,
+        },
+        "records": [vars(r) for r in records],
+        "readiness": readiness,
+        "skipped": skipped,
+        "record_summary": summarize_manifests(records),
+        "plans": plans,
+        "limitations": [
+            "Static serialized reference analysis only; runtime equip/deformation is unverified.",
+            "This prototype repoints m_Mesh; it does not author new vertex, weight, or bind-pose data.",
+            "Skin bundles in this build contain Material/Texture objects only; no replacement Mesh was found there.",
+        ],
+    }
+
+    if args.apply_reference_swap:
+        if not args.renderer_pid or not args.mesh_pid:
+            raise SystemExit("--apply-reference-swap requires --renderer-pid and --mesh-pid")
+        renderer = objs.get(args.renderer_pid)
+        target_mesh = objs.get(args.mesh_pid)
+        if renderer is None or target_mesh is None:
+            raise SystemExit("renderer or mesh path id not found in serialized file")
+        if target_mesh.type.name != "Mesh":
+            raise SystemExit("selected --mesh-pid does not resolve to a Mesh object")
+        source = _mesh_record(objs, args.mesh_pid)
+        # Build a target record from the renderer's current mesh for the plan.
+        data = renderer.read()
+        current = ptr(gv(data, "m_Mesh", None))
+        target = _mesh_record(objs, current["path_id"]) if current else None
+        if source is None or target is None:
+            raise SystemExit("could not build swap plan for selected objects")
+        plan = evaluate_swap(source, target)
+        go_ptr = ptr(gv(data, "m_GameObject", None))
+        animator_before = snapshot_animator_controller(objs, go_ptr["path_id"] if go_ptr else 0)
+        plan_report: dict[str, Any] = {
+            "renderer_pid": args.renderer_pid,
+            "mesh_pid": args.mesh_pid,
+            "status": plan.status,
+            "checks": [vars(c) for c in plan.checks],
+            "preserved_references": list(plan.preserved_references),
+        }
+        report["applied_plan"] = plan_report
+
+        if plan.status == "blocked":
+            # Gate failure: skip this model entirely; never write a patch file.
+            report["applied"] = False
+            report["skipped"].append({
+                "mesh_path_id": source.mesh_path_id,
+                "mesh_name": source.mesh_name,
+                "renderer_pid": args.renderer_pid,
+                "status": "blocked",
+                "reasons": [c.detail for c in plan.blocking_checks],
+            })
+            report["note"] = "Blocked by invariant checks; skipped without writing any asset bytes."
+        else:
+            # Snapshot every renderer-level reference before the only allowed write.
+            references_before = snapshot_renderer_references(data)
+            # The single mutation allowed by this prototype: m_Mesh PPtr.
+            data.m_Mesh.m_FileID = 0
+            data.m_Mesh.m_PathID = args.mesh_pid
+            references_after = snapshot_renderer_references(data)
+            animator_after = snapshot_animator_controller(objs, go_ptr["path_id"] if go_ptr else 0)
+
+            if references_before != references_after:
+                # Reference drift detected: abort before serializing anything.
+                raise SystemExit(
+                    "reference drift detected after m_Mesh write; bones/root/materials/GameObject "
+                    "must be unchanged; no file written"
+                )
+            if animator_before != animator_after:
+                raise SystemExit("Animator controller reference drifted; no file written")
+
+            data.save()
+            output_asset = out / "resources.assets"
+            output_asset.write_bytes(env.file.save())
+            report["applied"] = True
+            report["patch_file"] = str(output_asset)
+            report["note"] = (
+                "Reference-swap prototype output; re-sign and on-device test required before any install. "
+                "No inventory, entitlement, network or anti-cheat code was modified."
+            )
+
+    (out / "mesh_swap_plan_report.json").write_text(
+        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    print(json.dumps({
+        "mode": report["mode"],
+        "applied": report["applied"],
+        "records": len(records),
+        "plans": len(plans),
+        "blocked": sum(1 for p in plans if p["status"] == "blocked"),
+        "skipped": len(skipped),
+    }, ensure_ascii=False))
+    print(f"[OK] Report: {out / 'mesh_swap_plan_report.json'}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
