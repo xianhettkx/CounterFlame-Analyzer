@@ -131,7 +131,7 @@ These previews are static and unrigged. They are intended to validate UV placeme
     (preview_dir/"README.md").write_text(preview_readme,encoding="utf-8")
 
     # Bundle the static rig/animation map and human-readable mapping report with the exported assets.
-    for source in (reports/"unity_rig_animation_map.json", reports/"target_model_material_map.md", reports/"mesh_export_qa.md"):
+    for source in (reports/"unity_rig_animation_map.json", reports/"target_model_material_map.md", reports/"mesh_export_qa.md", reports/"unity_skin_weight_audit.json", reports/"unity_skin_weight_audit.md"):
         if source.exists():
             shutil.copy2(source,out/source.name)
     (out/"target_asset_export_manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding="utf-8")
