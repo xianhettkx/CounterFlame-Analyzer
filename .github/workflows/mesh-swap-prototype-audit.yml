@@ -1,0 +1,62 @@
+name: Mesh Swap Prototype Audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/unity_mesh_swap_prototype.py"
+      - "src/unity_mesh_swap_plan.py"
+      - "config/local_skin_pseudo_entity_map.json"
+      - ".github/workflows/mesh-swap-prototype-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Unity asset tools
+        run: pip install -r requirements.txt
+      - name: Download and verify original IPA
+        run: |
+          python - <<'PY'
+          import hashlib, urllib.request
+          url = "https://github.com/xianhettkx/CounterFlame-Analyzer/releases/download/ipa-v1/CounterFlame-1.4.1-c7-ios.2.ipa"
+          expected = "6c3e740ca379c5daf55f635e1228414230ca4acb7608cd7b35e7f5c0e0d952d3"
+          req = urllib.request.Request(url, headers={"User-Agent":"CounterFlame-Mesh-Swap-Audit/1.0"})
+          h = hashlib.sha256()
+          with urllib.request.urlopen(req, timeout=300) as src, open("input.ipa","wb") as dst:
+              while True:
+                  chunk = src.read(8*1024*1024)
+                  if not chunk: break
+                  dst.write(chunk)
+                  h.update(chunk)
+          actual = h.hexdigest()
+          print("SHA256:", actual)
+          if actual != expected:
+              raise SystemExit("Original IPA SHA256 mismatch")
+          PY
+      - name: Run read-only mesh swap audit
+        run: |
+          mkdir -p reports/mesh_swap_prototype_run
+          python src/unity_mesh_swap_prototype.py input.ipa --out reports/mesh_swap_prototype_run 2>&1 | tee reports/mesh_swap_prototype_run/audit.log
+      - name: Map renderer owners and material slots
+        run: |
+          python src/unity_mesh_renderer_link_audit.py input.ipa --out reports/mesh_swap_prototype_run/renderer_links
+      - name: Map renderer owners, bone bindings, and ancestor Animators
+        run: |
+          python src/unity_renderer_owner_context_audit.py input.ipa --out reports/mesh_swap_prototype_run/renderer_owner_context
+      - name: Upload mesh swap audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: counterflame-mesh-swap-prototype-audit
+          path: reports/mesh_swap_prototype_run/
+          if-no-files-found: error
+          retention-days: 14
