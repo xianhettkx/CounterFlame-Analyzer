@@ -53,6 +53,7 @@ class MeshModelRecord:
     bind_pose_count: int = 0
     submesh_count: int = 0
     renderer_bone_count: int = 0
+    renderer_owner_count: int = 0
     renderer_bone_names: list[str] = field(default_factory=list)
     bind_pose_signature: str = ""
     root_bone_name: str = ""
@@ -239,6 +240,12 @@ def record_readiness(record: MeshModelRecord) -> tuple[str, list[str]]:
         reasons.append(
             "skinned renderer but decoded skin weight entries are 0; "
             "skeleton binding cannot be verified from serialized data"
+        )
+
+    if record.renderer_owner_count > 1:
+        reasons.append(
+            f"mesh is referenced by {record.renderer_owner_count} renderer owners; "
+            "the exact renderer/skeleton instance must be selected before any swap"
         )
 
     if not record.material_names:
