@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Export only the verified target base meshes and their material dependency textures."""
 from __future__ import annotations
-import argparse, json, re, zipfile, tempfile
+import argparse, json, re, zipfile, tempfile, shutil
 from pathlib import Path
 from typing import Any
 
@@ -78,6 +78,10 @@ def run(ipa: Path, reports: Path, out: Path) -> dict[str, Any]:
                     manifest["texture_exports"].append({"skin_key":skin,"bundle_path":bundle_path,"path_id":int(obj.path_id),"texture_name":name,"width":int(getattr(tex,"m_Width",0)),"height":int(getattr(tex,"m_Height",0)),"file":str(Path("target_textures")/safe_name(skin)/filename),"bytes":target.stat().st_size})
                 except Exception as exc:
                     manifest["texture_exports"].append({"bundle_path":bundle_path,"path_id":int(obj.path_id),"error":f"{type(exc).__name__}: {exc}"[:200]})
+    # Bundle the static rig/animation map and human-readable mapping report with the exported assets.
+    for source in (reports/"unity_rig_animation_map.json", reports/"target_model_material_map.md"):
+        if source.exists():
+            shutil.copy2(source,out/source.name)
     (out/"target_asset_export_manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding="utf-8")
     archive=out/"counterflame_target_assets.zip"
     with zipfile.ZipFile(archive,"w",compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:
