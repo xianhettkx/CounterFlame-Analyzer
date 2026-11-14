@@ -487,7 +487,7 @@ def apply_reference_swap(
     return report
 
 
-def load_resources(ipa_path: Path, out: Path) -> tuple[Any, dict[int, Any], Path]:
+def load_resources(ipa_path: Path, out: Path) -> tuple[Any, dict[int, Any], Path, tempfile.TemporaryDirectory]:
     import UnityPy
 
     with zipfile.ZipFile(ipa_path, "r") as zf:
@@ -508,7 +508,9 @@ def load_resources(ipa_path: Path, out: Path) -> tuple[Any, dict[int, Any], Path
             (root / "resources.resource").write_bytes(data)
     env = UnityPy.load(str(main_asset))
     objs = {int(o.path_id): o for o in env.objects}
-    return env, objs, main_asset
+    # Keep the extracted directory alive: UnityPy may lazily read .resS /
+    # .resource streams while MeshHandler decodes vertex and skin data.
+    return env, objs, main_asset, temp
 
 
 def plan_cross_swaps(records: list[MeshModelRecord]) -> list[dict[str, Any]]:
@@ -562,7 +564,7 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
 
-    env, objs, main_asset = load_resources(Path(args.ipa), out)
+    env, objs, main_asset, temp_dir = load_resources(Path(args.ipa), out)
     pid_meta: dict[int, tuple[str, str]] = {}
     for skin in manifest.get("skins", []):
         skin_key = skin.get("key", "")
