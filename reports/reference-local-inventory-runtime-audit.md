@@ -62,3 +62,16 @@ A separate workflow downloaded and SHA-256-verified the stock IPA, extracted bot
 - The reference dylib is present in the reference IPA at `Frameworks/CounterFlameKAlert551.dylib`; its install-name identity is `/Library/MobileSubstrate/DynamicLibraries/CounterFlameKAlert551.dylib`.
 
 **Conclusion:** the reference package differs from stock at the main executable's dynamic-library dependency table: the reference executable explicitly loads the bundled module, while the stock executable does not. The install-name string is a separate piece of metadata and should not be mistaken for proof that the module is loaded only through an external injector. This is static linkage evidence only; it does not prove runtime success, signing compatibility, or behavior on a stock iOS device.
+
+## Main executable binary delta (2026-11-14)
+
+A byte-level comparison of the two extracted 66,368-byte arm64 main executables found:
+
+- Stock executable SHA-256: `ee2426db582cdb08ac92de8ff19e6e74fdd7567ca1e1ea5bf4b543fd698ecb50`.
+- Reference executable SHA-256: `c7c3fe2fdb9595579ec4592ee7fc803edb4c690d5102efc8045968fa11d684bd`.
+- 61 byte positions differ; the file sizes are identical.
+- Mach-O load-command count changes from 27 (stock) to 28 (reference).
+- `sizeofcmds` changes from 2,240 to 2,320 bytes.
+- The added 80-byte load command is `LC_LOAD_DYLIB @executable_path/Frameworks/CounterFlameKAlert551.dylib`.
+
+This narrows the observed main-executable change to a single added dylib load command plus the associated Mach-O header/load-command-table metadata and string storage. It does **not** establish that the dylib is safe, that its code only handles cosmetics, or that the modified app will pass iOS signing/runtime checks.
