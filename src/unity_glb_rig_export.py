@@ -62,6 +62,74 @@ def uints(values):
 def ushorts(values):
     return struct.pack("<"+"H"*len(values),*values)
 
+STATIC_SPECS = {
+    "butterfly_marblefade": (2233, "butterfly_marblefade_cs2"),
+    "awp_dragonlore": (2114, "awp_dragonlore_cs2"),
+    "ak47_neonrevolution": (2014, "ak47_neonrevolution_cs2"),
+    "m4a4_emperor": (1926, "m4a4_emperor_cs2"),
+    "deagle_codered": (2112, "deagle_codered_cs2"),
+}
+
+def export_static_glb(mesh, skin_key, mesh_id, texture_name, texture_path, target_path):
+    from UnityPy.helpers.MeshHelper import MeshHandler
+    handler=MeshHandler(mesh)
+    handler.process()
+    vertices=getattr(handler,"m_Vertices",None) or []
+    normals=getattr(handler,"m_Normals",None) or []
+    uvs=getattr(handler,"m_UV0",None) or []
+    if not vertices or not normals or not uvs or len(vertices)!=len(normals) or len(vertices)!=len(uvs):
+        raise RuntimeError(f"{skin_key}: missing or mismatched vertex/normal/UV arrays")
+    triangles=handler.get_triangles()
+    flat=[]
+    for group in triangles:
+        for tri in group:
+            if len(tri)==3:
+                a,b,c=[int(x) for x in tri]
+                flat.extend([c,b,a])
+    if not flat:
+        raise RuntimeError(f"{skin_key}: no triangle indices")
+    builder=GLBBuilder()
+    positions=[float(c) for v in vertices for c in v]
+    normals_flat=[float(c) for v in normals for c in v[:3]]
+    uv_flat=[float(c) for v in uvs for c in v[:2]]
+    pos_min=[min(float(v[i]) for v in vertices) for i in range(3)]
+    pos_max=[max(float(v[i]) for v in vertices) for i in range(3)]
+    pos_acc=builder.accessor(floats(positions),5126,len(vertices),"VEC3",34962,pos_min,pos_max)
+    normal_acc=builder.accessor(floats(normals_flat),5126,len(normals),"VEC3",34962)
+    uv_acc=builder.accessor(floats(uv_flat),5126,len(uvs),"VEC2",34962)
+    index_acc=builder.accessor(uints(flat),5125,len(flat),"SCALAR",34963,min(flat),max(flat))
+    image_view=builder.view(texture_path.read_bytes())
+    doc={
+        "asset":{"version":"2.0","generator":"CounterFlame Analyzer"},
+        "scene":0,
+        "scenes":[{"nodes":[0]}],
+        "nodes":[
+            {"name":"UnityToGLTF_XMirror","scale":[-1.0,1.0,1.0],"children":[1]},
+            {"name":str(val(mesh,"m_Name",skin_key) or skin_key),"mesh":0}
+        ],
+        "meshes":[{"name":str(val(mesh,"m_Name",skin_key) or skin_key),"primitives":[{
+            "attributes":{"POSITION":pos_acc,"NORMAL":normal_acc,"TEXCOORD_0":uv_acc},
+            "indices":index_acc,"material":0,"mode":4
+        }]}],
+        "materials":[{"name":skin_key+"_albedo","pbrMetallicRoughness":{
+            "baseColorTexture":{"index":0},"metallicFactor":0.0,"roughnessFactor":0.82
+        }}],
+        "images":[{"name":texture_name,"bufferView":image_view,"mimeType":"image/png"}],
+        "textures":[{"sampler":0,"source":0}],
+        "samplers":[{"magFilter":9729,"minFilter":9987,"wrapS":10497,"wrapT":10497}],
+        "extras":{"skin_key":skin_key,"source_mesh_path_id":mesh_id,"static_preview":True}
+    }
+    target_path.parent.mkdir(parents=True,exist_ok=True)
+    builder.write(target_path,doc)
+    return {
+        "skin_key":skin_key,"mesh_path_id":mesh_id,
+        "mesh_name":str(val(mesh,"m_Name",skin_key) or skin_key),
+        "vertex_count":len(vertices),"triangle_count":len(flat)//3,
+        "texture_name":texture_name,"glb_file":str(target_path),
+        "bytes":target_path.stat().st_size,
+        "note":"Static GLB preview; no skeleton weights or animation."
+    }
+
 def export(ipa:Path, reports:Path, out:Path):
     import UnityPy
     from UnityPy.helpers.MeshHelper import MeshHandler
@@ -338,6 +406,33 @@ def export(ipa:Path, reports:Path, out:Path):
         "The IPA was not modified."]
     (out/"rigged_glb_export_report.md").write_text("\n".join(md)+"\n",encoding="utf-8")
     manifest.setdefault("rigged_glb_exports",[]).append(report)
+    manifest["static_glb_exports"]=[]
+    texture_by_name={x["texture_name"]:x for x in manifest.get("texture_exports",[]) if x.get("file")}
+    static_rows=[]
+    for skin_key,(static_mesh_id,static_texture_name) in STATIC_SPECS.items():
+        static_obj=objects.get(static_mesh_id)
+        tex_entry=texture_by_name.get(static_texture_name)
+        if static_obj is None or tex_entry is None:
+            static_rows.append({"skin_key":skin_key,"error":"mesh or texture missing"})
+            continue
+        try:
+            static_mesh=static_obj.read()
+            static_texture_path=out/tex_entry["file"]
+            static_target=out/"skin_previews"/skin_key/(skin_key+"_static.glb")
+            static_report=export_static_glb(static_mesh,skin_key,static_mesh_id,static_texture_name,static_texture_path,static_target)
+            static_report["glb_file"]=str(static_target.relative_to(out))
+            static_rows.append(static_report)
+        except Exception as exc:
+            static_rows.append({"skin_key":skin_key,"mesh_path_id":static_mesh_id,"error":f"{type(exc).__name__}: {exc}"[:240]})
+    manifest["static_glb_exports"]=static_rows
+    static_md=["# Static GLB preview exports",""]
+    for row in static_rows:
+        if row.get("error"):
+            static_md.append(f"- {row['skin_key']}: export failed — {row['error']}")
+        else:
+            static_md.append(f"- {row['skin_key']}: {row['vertex_count']} vertices, {row['triangle_count']} triangles, {row['bytes']} bytes")
+    static_md += ["","These GLBs are static, textured geometry previews. The Specialist glove also has a separate rigged GLB preview; weapon meshes without serialized skin weights are not assigned fabricated skeletons."]
+    (out/"static_glb_export_report.md").write_text("\n".join(static_md)+"\n",encoding="utf-8")
     manifest_path.write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding="utf-8")
     archive=out/"counterflame_target_assets.zip"
     with zipfile.ZipFile(archive,"w",compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:
