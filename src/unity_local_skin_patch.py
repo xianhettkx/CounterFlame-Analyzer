@@ -169,9 +169,11 @@ def main():
                             if texture_name and texture_name not in source_textures:
                                 try:
                                     source_textures[texture_name]={
-                                        "image":texture_data.image.copy(),
+                                        "data":bytes(texture_data.image_data),
                                         "width":int(texture_data.m_Width),
                                         "height":int(texture_data.m_Height),
+                                        "format":texture_data.m_TextureFormat,
+                                        "mip_count":int(get_field(texture_data,"m_MipCount",1) or 1),
                                         "bundle":bundle_path,
                                     }
                                 except Exception:
@@ -232,12 +234,15 @@ def main():
                             replacement_name=TEXTURE_OVERRIDES.get(skin_key,{}).get(base_name,{}).get(slot)
                             chosen=source_textures.get(replacement_name) if replacement_name else None
                             if chosen is not None:
-                                image=chosen["image"]
-                                target_size=(int(get_field(base_tex_data,"m_Width",0) or image.width),int(get_field(base_tex_data,"m_Height",0) or image.height))
-                                if image.size!=target_size:
-                                    from PIL import Image
-                                    image=image.resize(target_size,Image.Resampling.LANCZOS)
-                                base_tex_data.image=image
+                                # Copy the already-encoded Unity texture payload directly.
+                                # This avoids recompression artifacts and keeps the source format/mip chain.
+                                base_tex_data.image_data=chosen["data"]
+                                base_tex_data.m_Width=chosen["width"]
+                                base_tex_data.m_Height=chosen["height"]
+                                base_tex_data.m_CompleteImageSize=len(chosen["data"])
+                                base_tex_data.m_TextureFormat=chosen["format"]
+                                if hasattr(base_tex_data,"m_MipCount"):
+                                    base_tex_data.m_MipCount=chosen["mip_count"]
                                 base_tex_data.save()
                                 replacements.append({
                                     "skin_key":skin_key,"base_material":base_name,"slot":slot,
@@ -266,7 +271,7 @@ def main():
             audit["replacements"]=replacements
             audit["patch_file"]="resources.assets"
             audit["patch_sha256"]=__import__("hashlib").sha256(output_asset.read_bytes()).hexdigest()
-        audit["source_texture_index"]={k:{"width":v["width"],"height":v["height"],"bundle":v["bundle"]} for k,v in sorted(source_textures.items())}
+        audit["source_texture_index"]={k:{"width":v["width"],"height":v["height"],"format":str(v["format"]),"mip_count":v["mip_count"],"bundle":v["bundle"]} for k,v in sorted(source_textures.items())}
         audit["counts"]={
             "target_bundle_paths":len(selected),
             "source_textures_found":len(source_textures),
