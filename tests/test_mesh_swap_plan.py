@@ -253,7 +253,7 @@ class ReferenceSnapshotTests(unittest.TestCase):
             @m_PathID.setter
             def m_PathID(self, value):
                 self._path_id = value
-                objs[30]._d.m_Controller = self._ptr(777)
+                objs[30]._d.m_Controller = _ptr(777)
 
         data = SimpleNamespace(
             m_GameObject=self._ptr(10), m_Bones=[], m_RootBone=None,
