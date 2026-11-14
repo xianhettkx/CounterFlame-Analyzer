@@ -181,10 +181,7 @@ class ReferenceSnapshotTests(unittest.TestCase):
         after = snapshot_renderer_references(data)
         self.assertNotEqual(before, after)
 
-    def test_animator_controller_snapshot_roundtrip(self):
-        go = SimpleNamespace(m_Component=[SimpleNamespace(component=self._ptr(20))])
-        anim = SimpleNamespace(m_Controller=self._ptr(30))
-
+    def _hierarchy(self, parent_animator_count=1):
         class Obj:
             def __init__(self, t, d):
                 self.type = SimpleNamespace(name=t)
@@ -192,9 +189,57 @@ class ReferenceSnapshotTests(unittest.TestCase):
             def read(self):
                 return self._d
 
-        objs = {10: Obj("GameObject", go), 20: Obj("Animator", anim)}
-        controller = snapshot_animator_controller(objs, 10)
-        self.assertEqual(controller, {"file_id": 0, "path_id": 30})
+        def go(components):
+            return SimpleNamespace(m_Component=[
+                SimpleNamespace(component=self._ptr(pid)) for pid in components
+            ])
+
+        objs = {
+            10: Obj("GameObject", go([11])),
+            11: Obj("Transform", SimpleNamespace(
+                m_GameObject=self._ptr(10), m_Father=self._ptr(21), m_Children=[]
+            )),
+            20: Obj("GameObject", go([21] + list(range(30, 30 + parent_animator_count)))),
+            21: Obj("Transform", SimpleNamespace(
+                m_GameObject=self._ptr(20), m_Father=self._ptr(0), m_Children=[self._ptr(11)]
+            )),
+        }
+        for i in range(parent_animator_count):
+            objs[30 + i] = Obj("Animator", SimpleNamespace(
+                m_Controller=self._ptr(40 + i), m_Avatar=self._ptr(50 + i)
+            ))
+        return objs
+
+    def test_animator_controller_snapshot_roundtrip(self):
+        snapshot = snapshot_animator_controller(self._hierarchy(), 10)
+        self.assertEqual([n["gameobject_path_id"] for n in snapshot["nodes"]], [10, 20])
+        self.assertEqual(snapshot["nodes"][1]["animators"][0]["controller"],
+                         {"file_id": 0, "path_id": 40})
+
+    def test_parent_animator_is_captured_even_when_renderer_object_has_none(self):
+        snapshot = snapshot_animator_controller(self._hierarchy(), 10)
+        self.assertEqual(snapshot["nodes"][0]["animators"], [])
+        self.assertEqual(len(snapshot["nodes"][1]["animators"]), 1)
+        self.assertEqual(snapshot["nodes"][1]["animators"][0]["avatar"],
+                         {"file_id": 0, "path_id": 50})
+
+    def test_multiple_parent_animators_are_all_captured(self):
+        snapshot = snapshot_animator_controller(self._hierarchy(parent_animator_count=2), 10)
+        self.assertEqual(
+            [a["controller"]["path_id"] for a in snapshot["nodes"][1]["animators"]],
+            [40, 41],
+        )
+
+    def test_parent_animator_controller_drift_is_detected(self):
+        objs = self._hierarchy()
+        before = snapshot_animator_controller(objs, 10)
+        objs[30]._d.m_Controller = self._ptr(999)
+        after = snapshot_animator_controller(objs, 10)
+        self.assertNotEqual(before, after)
+        snap = {"m_GameObject": self._ptr(10), "m_Bones": [], "m_RootBone": None,
+                "m_Materials": []}
+        with self.assertRaises(ReferenceDriftError):
+            assert_no_reference_drift(snap, snap, before, after)
 
 
 def _ptr(pid):
@@ -233,8 +278,14 @@ class _Env:
 
 def _build_world(renderer_pid, mesh_pid, data):
     go_pid, mat_pid = 100, 200
+    transform_pid = 101
     objs = {
-        go_pid: _Obj("GameObject", SimpleNamespace(m_Component=[]), go_pid),
+        go_pid: _Obj("GameObject", SimpleNamespace(m_Component=[
+            SimpleNamespace(component=_ptr(transform_pid))
+        ]), go_pid),
+        transform_pid: _Obj("Transform", SimpleNamespace(
+            m_GameObject=_ptr(go_pid), m_Father=_ptr(0), m_Children=[]
+        ), transform_pid),
         mat_pid: _Obj("Material", SimpleNamespace(m_Name="mat"), mat_pid),
         renderer_pid: _Obj("MeshFilter", data, renderer_pid),
         mesh_pid: _Obj("Mesh", None, mesh_pid),
