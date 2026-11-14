@@ -71,8 +71,24 @@ def main():
   rows.append({"component_path_id":pid,"component_type":typ,"component_name":peek(o),
    "owners":resolved_owners,"target_mesh_refs":[{**r,"skin_key":targets[r["path_id"]],"mesh_name":names_by_id.get(r["path_id"],"")} for r in hit],
    "all_refs":refs})
+ related=[]
+ tokens=("ak47","m4a1","awp","deagle","butterfly","knife_flip","glove_ct_specialist")
+ for pid,o in objs.items():
+  if o.type.name not in ("SkinnedMeshRenderer","MeshRenderer","MeshFilter"): continue
+  try:d=o.read()
+  except Exception:continue
+  refs=list(ptrs(d))
+  go_ref=next((r for r in refs if r["field"].endswith("m_GameObject") and r["file_id"]==0),None)
+  if not go_ref or go_ref["path_id"] not in objs: continue
+  try:go=objs[go_ref["path_id"]].read(); go_name=str(getattr(go,"m_Name","") or "")
+  except Exception:continue
+  if not any(t in go_name.lower() for t in tokens): continue
+  mesh_refs=[r for r in refs if r["field"].endswith("m_Mesh")]
+  mat_refs=[r for r in refs if "m_Materials" in r["field"]]
+  related.append({"component_path_id":pid,"type":o.type.name,"gameobject_path_id":go_ref["path_id"],"gameobject":go_name,
+   "mesh_refs":[{**r,"mesh_name":names_by_id.get(r["path_id"],"")} for r in mesh_refs],"materials":mat_refs})
  result={"tool":"Unity target mesh renderer linkage audit","asset":path,
-  "target_mesh_count":len(targets),"matched_component_count":len(rows),
+  "target_mesh_count":len(targets),"matched_component_count":len(rows),"related_weapon_renderers":related,
   "matches":rows,"target_meshes":[{"path_id":pid,"skin_key":key,"name":names_by_id.get(pid,"")} for pid,key in targets.items()],
   "limitations":["Read-only static serialized references; does not prove runtime skin activation.","No Mesh, Material, inventory, networking, or IPA data modified."]}
  out=Path(a.out);out.mkdir(parents=True,exist_ok=True);f=out/"mesh_renderer_links.json";f.write_text(json.dumps(result,ensure_ascii=False,indent=2))
