@@ -58,18 +58,19 @@ ZH = {
     "Are you sure?": "确定吗？", "Are you sure you want to quit?": "确定要退出吗？",
 }
 
-def translate_value(value: Any, stats: dict) -> Any:
+def translate_value(value: Any, stats: dict, context: str = "", allow_all: bool = False) -> Any:
     if isinstance(value, str):
-        translated = ZH.get(value.strip())
+        text_field = any(token in context.lower() for token in ("text", "label", "title", "desc", "message", "content", "placeholder", "tooltip", "caption", "button", "localiz"))
+        translated = ZH.get(value.strip()) if (allow_all or text_field) else None
         if translated is not None and value == value.strip():
             stats[value] = stats.get(value, 0) + 1
             return translated
         return value
     if isinstance(value, list):
-        return [translate_value(v, stats) for v in value]
+        return [translate_value(v, stats, context, allow_all) for v in value]
     if isinstance(value, dict):
         # Preserve keys: localization keys can be identifiers used by game code.
-        return {k: translate_value(v, stats) for k, v in value.items()}
+        return {k: translate_value(v, stats, str(k), allow_all) for k, v in value.items()}
     return value
 
 def process_entry(raw: bytes, label: str):
@@ -88,7 +89,7 @@ def process_entry(raw: bytes, label: str):
                     # Parse structured localization tables and translate values only.
                     try:
                         parsed = json.loads(text)
-                        new_obj = translate_value(parsed, stats)
+                        new_obj = translate_value(parsed, stats, allow_all=True)
                         if new_obj != parsed:
                             data.m_Script = json.dumps(new_obj, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
                             obj.save()
@@ -116,7 +117,7 @@ def process_entry(raw: bytes, label: str):
                     tree = obj.read_typetree()
                 except Exception:
                     continue
-                new_tree = translate_value(tree, stats)
+                new_tree = translate_value(tree, stats, allow_all=False)
                 if new_tree != tree:
                     obj.save_typetree(new_tree)
                     changed = True
