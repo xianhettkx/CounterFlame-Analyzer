@@ -127,6 +127,24 @@ class MeshSwapPlanTests(unittest.TestCase):
         self.assertEqual(plan.status, "blocked")
         self.assertTrue(any(c.check == "renderer_side_match" and not c.passed for c in plan.checks))
 
+    def test_skinned_pair_with_different_bone_order_is_blocked(self):
+        source = glove(2000, 3, 3)
+        target = glove(2217, 3, 3)
+        source.renderer_bone_names = ["root", "hand", "finger"]
+        target.renderer_bone_names = ["root", "finger", "hand"]
+        plan = evaluate_swap(source, target)
+        self.assertEqual(plan.status, "blocked")
+        self.assertTrue(any(c.check == "bone_order_match" and not c.passed for c in plan.checks))
+
+    def test_skinned_pair_with_different_bindpose_matrices_is_blocked(self):
+        source = glove(2000, 67, 67)
+        target = glove(2217, 67, 67)
+        source.bind_pose_signature = "source-matrix-hash"
+        target.bind_pose_signature = "target-matrix-hash"
+        plan = evaluate_swap(source, target)
+        self.assertEqual(plan.status, "blocked")
+        self.assertTrue(any(c.check == "bindpose_data_match" and not c.passed for c in plan.checks))
+
     def test_static_filter_pair_is_reference_swap_eligible(self):
         plan = evaluate_swap(static_filter(2048), static_filter(2053))
         self.assertEqual(plan.status, "reference_swap_eligible")
