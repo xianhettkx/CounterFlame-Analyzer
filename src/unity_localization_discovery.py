@@ -84,10 +84,10 @@ def scan_blob(raw, archive_path):
 UI_WORDS = {"play","settings","inventory","market","store","loadout","weapon","weapons","gloves","stickers","agents","case","open","close","back","cancel","confirm","search","filter","buy","sell","equip","unequip","inspect","loading","error","retry","continue","exit","resume","matchmaking","ranked","casual","competitive","deathmatch","team","profile","friends"}
 
 def native_candidate(value):
-    value = value.strip().strip("\\x00")
+    value = value.strip().strip("\x00")
     if not 2 <= len(value) <= 180 or not value.isprintable():
         return False
-    if any(ch in value for ch in ("_", "/", "\\\\", "://", "{", "}", "<", ">", "$", "=")):
+    if any(ch in value for ch in ("_", "/", "://", "{", "}", "<", ">", "$", "=")):
         return False
     words = re.findall(r"[A-Za-z][A-Za-z'-]*", value)
     if len(words) >= 2 and " " in value:
@@ -106,8 +106,8 @@ def scan_native_binaries(zf):
             raw = zf.read(info)
         except Exception:
             continue
-        patterns = (("ascii", re.compile(rb"[\\x20-\\x7e]{3,180}")),
-                    ("utf16le", re.compile(rb"(?:[\\x20-\\x7e]\\x00){3,180}")))
+        patterns = (("ascii", re.compile(rb"[\x20-\x7e]{3,180}")),
+                    ("utf16le", re.compile(rb"(?:[\x20-\x7e]\x00){3,180}")))
         for encoding, pattern in patterns:
             for match in pattern.finditer(raw):
                 try:
@@ -142,7 +142,8 @@ def main():
             "candidate_occurrences":len(rows),"unique_strings":len(by_text),
             "errors":errors,"strings":sorted(by_text.values(),key=lambda x:(x["text"].casefold(),x["text"]))}
     (out/"localization_string_inventory.json").write_text(json.dumps(report,ensure_ascii=True,indent=2),encoding="utf-8")
-    native = scan_native_binaries(zf)
+    with zipfile.ZipFile(args.ipa) as native_zf:
+        native = scan_native_binaries(native_zf)
     native_report = {"mode":"read_only_native_string_discovery",
                      "binary_files_scanned":sorted({x["source"] for x in native}),
                      "candidate_occurrences":len(native),"strings":native}
