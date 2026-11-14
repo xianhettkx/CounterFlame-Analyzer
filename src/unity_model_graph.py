@@ -72,6 +72,16 @@ def main()->int:
                     except Exception: pass
             components.append({"component":resolved,"references":refs})
         graph.append({"gameobject":info,"components":components})
+    skin_metadata=[]
+    skin_keys=("butterfly_marblefade","specialist_pillow","awp_dragonlore","ak47_neonrevolution","m4a4_emperor","deagle_codered")
+    for obj in obj_map.values():
+        typ=getattr(getattr(obj,"type",None),"name","")
+        if typ not in {"MonoBehaviour","Material"}: continue
+        info=meta[int(obj.path_id)]
+        if not any(k in info["name"].lower() for k in skin_keys): continue
+        try: data=obj.read(); refs=[resolve(x) for x in ptr_fields(data)]
+        except Exception as exc: refs=[{"error":f"{type(exc).__name__}: {exc}"[:200]}]
+        skin_metadata.append({"object":info,"references":refs})
     # Also capture direct references on renderers/filters/animators, including those on non-target-named objects.
     renderers=[]
     for obj in obj_map.values():
@@ -83,7 +93,7 @@ def main()->int:
         if typ in {"MeshFilter","MeshRenderer","SkinnedMeshRenderer","Animator"} or any(x["type"]=="Mesh" for x in refs):
             owner=meta[int(obj.path_id)]
             renderers.append({"object":owner,"references":refs})
-    report={"tool":"CounterFlame Unity Model Graph","schema_version":1,"asset_path":asset_path,"serialized_object_count":len(obj_map),"target_gameobject_count":len(graph),"renderer_component_count":len(renderers),"target_gameobjects":graph,"renderer_components":renderers,"limitations":["Static serialized reference graph only; does not establish runtime loading or equip behavior.","Only references resolvable within resources.assets are expanded.","No IPA contents are modified."]}
+    report={"tool":"CounterFlame Unity Model Graph","schema_version":1,"asset_path":asset_path,"serialized_object_count":len(obj_map),"target_gameobject_count":len(graph),"renderer_component_count":len(renderers),"target_gameobjects":graph,"skin_metadata_objects":skin_metadata,"renderer_components":renderers,"limitations":["Static serialized reference graph only; does not establish runtime loading or equip behavior.","Only references resolvable within resources.assets are expanded.","No IPA contents are modified."]}
     (out/"unity_model_graph.json").write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
     print(f"[OK] Model graph: {asset_path}")
     print(f"Serialized objects: {len(obj_map)}")
