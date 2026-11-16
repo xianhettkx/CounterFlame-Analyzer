@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090d14"><title>本地外观实验室</title>
+<style>
+:root{color-scheme:dark;--bg:#090d14;--panel:#121a26;--line:#253247;--muted:#91a0b5;--txt:#eef4ff;--accent:#75d5ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(1000px 500px at 50% -15%,#18314b 0%,var(--bg) 55%);color:var(--txt);font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:env(safe-area-inset-top) 14px calc(24px + env(safe-area-inset-bottom))}
+header{padding:22px 2px 16px}h1{font-size:24px;margin:0 0 6px;letter-spacing:.3px}.sub{color:var(--muted);font-size:12px;line-height:1.55}
+.notice{border:1px solid #36516b;background:#101f2d;border-radius:14px;padding:12px;color:#b9d8ed;font-size:12px;line-height:1.6;margin:8px 0 14px}
+.panel{background:linear-gradient(160deg,#172233,#101722);border:1px solid var(--line);border-radius:18px;padding:14px;margin:12px 0;box-shadow:0 12px 32px #0004}
+.row{display:flex;gap:9px;align-items:center;justify-content:space-between}.eyebrow{font-size:10px;letter-spacing:1.4px;color:var(--accent);font-weight:700}.weapon{font-size:18px;font-weight:750;margin:5px 0}
+.preview{height:170px;border-radius:14px;background:linear-gradient(135deg,#18283a,#0b111b);display:grid;place-items:center;overflow:hidden;border:1px solid #2c3c52;margin:12px 0}
+.preview img{max-width:100%;max-height:100%;object-fit:contain}.placeholder{font-size:13px;color:#8293aa;text-align:center;padding:20px}
+label{display:block;color:#aebbd0;font-size:12px;margin:12px 0 6px}select,input,button{width:100%;border-radius:11px;border:1px solid #34445a;background:#0b121d;color:var(--txt);padding:12px;font-size:14px}
+button{background:linear-gradient(120deg,#174b68,#17617a);border:0;font-weight:700;margin-top:10px}button.secondary{background:#202c3c;border:1px solid #3a4a60}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.swatches{display:flex;gap:8px;flex-wrap:wrap}.swatch{width:34px;height:34px;border-radius:50%;border:2px solid #dcecff55;cursor:pointer}.swatch[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:3px}
+.small{color:var(--muted);font-size:11px;line-height:1.5}.status{font-size:12px;color:#9ce2bb;min-height:18px;margin-top:8px}
+footer{color:#718198;text-align:center;font-size:10px;padding:14px}
+</style></head>
+<body>
+<header><div class="eyebrow">OFFLINE • COSMETIC SANDBOX</div><h1>本地外观实验室</h1><div class="sub">独立外观预览原型 · 不注入游戏、不修改账号库存、不连接游戏服务器</div></header>
+<div class="notice">安全边界：这里只预览你自己提供或有权使用的图片/模型素材。不会解锁付费物品、伪造服务器授权，也不包含瞄准、透视、无后坐力等游戏作弊功能。</div>
+<section class="panel">
+ <div class="row"><div><div class="eyebrow">01 / PREVIEW</div><div class="weapon" id="weaponTitle">AK-47 · 本地预览</div></div><span class="small">LOCAL ONLY</span></div>
+ <div class="preview" id="preview"><div class="placeholder">导入你有权使用的武器外观图片<br>即可在这里查看预览</div></div>
+ <div class="grid"><div><label for="weapon">展示槽位</label><select id="weapon"><option>AK-47</option><option>M4A1-S</option><option>AWP</option><option>USP-S</option><option>手套</option><option>刀具</option></select></div><div><label for="finish">外观名称</label><input id="finish" maxlength="40" placeholder="例如：自制蓝色涂装"></div></div>
+ <label for="imageFile">导入本地图片（PNG / JPG / WEBP）</label><input id="imageFile" type="file" accept="image/png,image/jpeg,image/webp">
+ <div class="small">图片只在当前浏览器本地读取，不会上传。</div>
+</section>
+<section class="panel">
+ <div class="eyebrow">02 / COLOR STUDY</div><div class="weapon">材质色彩参考</div>
+ <div class="swatches" id="swatches">
+ <button class="swatch" style="background:#273f66" data-color="#273f66" aria-label="深蓝" aria-pressed="true"></button>
+ <button class="swatch" style="background:#a63b36" data-color="#a63b36" aria-label="暗红" aria-pressed="false"></button>
+ <button class="swatch" style="background:#b58a42" data-color="#b58a42" aria-label="古金" aria-pressed="false"></button>
+ <button class="swatch" style="background:#657c72" data-color="#657c72" aria-label="军绿" aria-pressed="false"></button>
+ <button class="swatch" style="background:#777c8c" data-color="#777c8c" aria-label="钛灰" aria-pressed="false"></button>
+ <button class="swatch" style="background:#e4e7ec" data-color="#e4e7ec" aria-label="银白" aria-pressed="false"></button>
+ </div><div class="small" style="margin-top:9px">色块仅作配色研究，不会修改游戏内模型或材质。</div>
+</section>
+<section class="panel">
+ <div class="eyebrow">03 / LOCAL PRESET</div><div class="weapon">本地方案</div>
+ <div class="grid"><button id="save">保存方案</button><button class="secondary" id="export">导出 JSON</button></div>
+ <label for="importFile">导入方案 JSON</label><input id="importFile" type="file" accept="application/json">
+ <div id="status" class="status" role="status"></div>
+</section>
+<footer>Standalone prototype · 不包含第三方游戏代码或受限库存数据</footer>
+<script>
+const $=s=>document.querySelector(s);let imageData="",chosenColor="#273f66";
+$("#weapon").addEventListener("change",()=>$("#weaponTitle").textContent=$("#weapon").value+" · 本地预览");
+$("#imageFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;if(f.size>8*1024*1024){$("#status").textContent="图片过大，请选择 8 MB 以下文件";return}const r=new FileReader();r.onload=()=>{imageData=r.result;$("#preview").innerHTML='<img alt="本地外观预览" src="'+imageData+'">'};r.readAsDataURL(f)});
+$("#swatches").addEventListener("click",e=>{const b=e.target.closest("[data-color]");if(!b)return;chosenColor=b.dataset.color;document.querySelectorAll(".swatch").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));$("#preview").style.background="linear-gradient(135deg,"+chosenColor+",#0b111b)"});
+function state(){return {schema:"local-cosmetic-preview-v1",weapon:$("#weapon").value,name:$("#finish").value,color:chosenColor,image:imageData,scope:"offline-preview-only"}}
+$("#save").onclick=()=>{try{localStorage.setItem("local-cosmetic-preview-v1",JSON.stringify(state()));$("#status").textContent="已保存在本机浏览器"}catch(e){$("#status").textContent="保存失败：图片可能过大，请改用导出方案"}};
+$("#export").onclick=()=>{const blob=new Blob([JSON.stringify(state(),null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="cosmetic-preview.json";a.click();URL.revokeObjectURL(a.href);$("#status").textContent="方案已导出"};
+$("#importFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(x.schema!=="local-cosmetic-preview-v1")throw Error("schema");$("#weapon").value=x.weapon||"AK-47";$("#weaponTitle").textContent=$("#weapon").value+" · 本地预览";$("#finish").value=x.name||"";chosenColor=x.color||"#273f66";imageData=x.image||"";$("#preview").style.background="linear-gradient(135deg,"+chosenColor+",#0b111b)";$("#preview").innerHTML=imageData?'<img alt="本地外观预览" src="'+imageData+'">':'<div class="placeholder">方案已载入</div>';$("#status").textContent="导入成功"}catch(err){$("#status").textContent="文件格式不正确"}};r.readAsText(f)});
+</script></body></html>
